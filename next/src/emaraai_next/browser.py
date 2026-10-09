@@ -40,7 +40,7 @@ class Bridge:
     def __init__(self):
         self._queue: asyncio.Queue | None = None
         self._pending: dict[str, asyncio.Future] = {}
-        self.last_seen = 0.0
+        self.last_seen: float | None = None          # None = never connected (0.0 would look "recent" right after a reboot)
         self.instance = self.version = self.token = ""
         self.telemetry: dict = {}
         self._nonces: dict[str, float] = {}
@@ -76,7 +76,7 @@ class Bridge:
 
     @property
     def connected(self) -> bool:
-        return time.monotonic() - self.last_seen < ALIVE_SECONDS
+        return self.last_seen is not None and time.monotonic() - self.last_seen < ALIVE_SECONDS
 
     async def poll(self, *, wait: float = 20.0, telemetry: dict | None = None) -> list[dict]:
         self.last_seen = time.monotonic()
