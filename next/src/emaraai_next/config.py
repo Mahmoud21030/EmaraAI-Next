@@ -80,7 +80,10 @@ def load(path: str | Path | None = None, env: dict | None = None) -> Config:
     p = Path(path) if path else next((c for c in (Path("emaraai.toml"), Path.home() / ".emaraai-next" / "emaraai.toml") if c.exists()), None)
     raw = {}
     if p and p.exists():
-        raw = tomllib.loads(p.read_text(encoding="utf-8"))
+        try:
+            raw = tomllib.loads(p.read_text(encoding="utf-8"))
+        except tomllib.TOMLDecodeError as e:
+            raise SystemExit(f"{p} is not valid: {e}. Write paths with / (C:/Users/me/...) or just run `emaraai-next setup` again.") from None
         cfg.source = str(p)
     for section in ("node", "backup", "worker"):
         obj = getattr(cfg, section)

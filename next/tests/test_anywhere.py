@@ -13,6 +13,7 @@ from helpers import make_remote, py, remote_file
 
 
 def _cfg(tmp_path, remote="", drive=""):
+    remote, drive = remote.replace("\\", "/"), drive.replace("\\", "/")     # Windows paths: TOML treats \ as an escape
     f = tmp_path / "emaraai.toml"
     f.write_text(f'[node]\nname = "pc-1"\ndata_dir = "{(tmp_path / "data").as_posix()}"\n'
                  f'[backup]\ngit_remote = "{remote}"\ndrive_folder = "{drive}"\n[worker]\npoll_seconds = 0\n')
