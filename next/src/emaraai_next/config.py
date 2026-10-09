@@ -56,11 +56,18 @@ class IntegrationsCfg:
 
 
 @dataclass
+class AiCfg:
+    base_url: str = ""                    # an OpenAI-compatible gateway, e.g. https://codecraftapi.com/v1 (key: EMARAAI_AI_KEY)
+    model: str = ""
+
+
+@dataclass
 class Config:
     node: Node = field(default_factory=Node)
     backup: BackupCfg = field(default_factory=BackupCfg)
     worker: WorkerCfg = field(default_factory=WorkerCfg)
     integrations: IntegrationsCfg = field(default_factory=IntegrationsCfg)
+    ai: AiCfg = field(default_factory=AiCfg)
     source: str = ""
 
     @property
@@ -91,7 +98,7 @@ def load(path: str | Path | None = None, env: dict | None = None) -> Config:
         except tomllib.TOMLDecodeError as e:
             raise SystemExit(f"{p} is not valid: {e}. Write paths with / (C:/Users/me/...) or just run `emaraai-next setup` again.") from None
         cfg.source = str(p)
-    for section in ("node", "backup", "worker", "integrations"):
+    for section in ("node", "backup", "worker", "integrations", "ai"):
         obj = getattr(cfg, section)
         for f in fields(obj):
             if f.name in raw.get(section, {}):

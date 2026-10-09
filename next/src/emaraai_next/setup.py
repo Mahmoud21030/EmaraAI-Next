@@ -99,7 +99,8 @@ def write(cfg: Config, path: Path = CFG_FILE) -> Path:
         f"[backup]\ngit_remote = {q(cfg.backup.git_remote)}\ndrive_folder = {q(cfg.backup.drive_folder)}\n\n"
         f"[worker]\nenabled = {str(cfg.worker.enabled).lower()}\npoll_seconds = {cfg.worker.poll_seconds}\n"
         f"assignees = [{', '.join(q(a) for a in cfg.worker.assignees)}]\n\n"
-        f"[integrations]\nwebhook_url = {q(cfg.integrations.webhook_url)}\n", encoding="utf-8")
+        f"[integrations]\nwebhook_url = {q(cfg.integrations.webhook_url)}\n\n"
+        f"[ai]\nbase_url = {q(cfg.ai.base_url)}\nmodel = {q(cfg.ai.model)}\n", encoding="utf-8")
     return path
 
 
@@ -116,6 +117,29 @@ def autostart_windows() -> tuple[bool, str]:
     return True, cmd
 
 
+def save_secret(name: str, value: str) -> str:
+    """Windows: the user's environment (setx); elsewhere: a file only this user can read. Never the settings file."""
+    os.environ[name] = value
+    if os.name == "nt":
+        subprocess.run(["setx", name, value], capture_output=True)
+        return "windows user environment"
+    f = HOME_DIR / "secrets.env"
+    f.parent.mkdir(parents=True, exist_ok=True)
+    lines = [ln for ln in (f.read_text().splitlines() if f.exists() else []) if not ln.startswith(name + "=")] + [f"{name}={value}"]
+    f.write_text("\n".join(lines) + "\n")
+    f.chmod(0o600)
+    return str(f)
+
+
+def load_secrets() -> None:
+    f = HOME_DIR / "secrets.env"
+    if f.exists():
+        for ln in f.read_text().splitlines():
+            k, _, v = ln.partition("=")
+            if k and k not in os.environ:
+                os.environ[k] = v
+
+
 def run(yes: bool = False, path: Path = CFG_FILE) -> dict:
     cfg = load(path if path.exists() else None, env={})
     if not path.exists():
@@ -127,12 +151,18 @@ def run(yes: bool = False, path: Path = CFG_FILE) -> dict:
                                 cfg.backup.git_remote, yes)
     cfg.backup.drive_folder = ask("3) Where should files be backed up? A synced folder (Google Drive, OneDrive ...) - or Enter to skip:",
                                   cfg.backup.drive_folder, yes)
+    cfg.ai.base_url = ask("4) An AI API (OpenAI-compatible, ends with /v1) - or Enter to skip:", cfg.ai.base_url, yes)
+    if cfg.ai.base_url:
+        cfg.ai.model = ask("   Model name on that API:", cfg.ai.model, yes)
+        key = "" if yes else ask("   Its API key (kept in your Windows account, never in a file) - Enter keeps the current one:", "", yes)
+        if key:
+            save_secret("EMARAAI_AI_KEY", key)
     written = write(cfg, path)
     result = {"config": str(written), "tailscale": None, "autostart": None}
-    if not on_ci_or_runner() and tailscale_exe() and ask_yes("4) Reach this computer from your phone/laptop through Tailscale?", True, yes):
+    if not on_ci_or_runner() and tailscale_exe() and ask_yes("5) Reach this computer from your phone/laptop through Tailscale?", True, yes):
         ok, msg = tailscale_publish(cfg.node.port)
         result["tailscale"] = msg if ok else f"not enabled: {msg}"
-    if os.name == "nt" and ask_yes("5) Start EmaraAI Next when Windows starts?", True, yes):
+    if os.name == "nt" and ask_yes("6) Start EmaraAI Next when Windows starts?", True, yes):
         try:
             ok, msg = autostart_windows()
         except OSError as e:                     # never let an optional step break setup

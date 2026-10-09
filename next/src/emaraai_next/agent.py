@@ -90,7 +90,8 @@ class AgentRuntime:
                         ended = ended or (not err and (_paused(out) or (tool.ends_turn and not _resumed(out))))
                     res.tool_log.append({"route": route.id, "tool": call.name, "error": err})
                     results.append((call, out, err))
-                messages.append(route.provider.tool_results_message(results))
+                tr = route.provider.tool_results_message(results)
+                messages.extend(tr if isinstance(tr, list) else [tr])
                 if ended:
                     res.status = "paused"
                     return res

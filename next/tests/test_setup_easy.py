@@ -29,7 +29,7 @@ def test_answers_typed_by_hand(tmp_path, monkeypatch):
     monkeypatch.setattr(setup, "tailscale_exe", lambda: None)
     monkeypatch.setattr("sys.stdin.isatty", lambda: True)
     monkeypatch.setattr(setup, "autostart_windows", lambda: (True, "stub"))
-    answers = iter(["office-pc", "", "skip", "n", "n"])            # Windows asks one more question (start with Windows)
+    answers = iter(["office-pc", "", "skip", "", "n", "n"])            # Windows asks one more question (start with Windows)
     monkeypatch.setattr("builtins.input", lambda _: next(answers))
     f = tmp_path / "emaraai.toml"
     setup.run(path=f)

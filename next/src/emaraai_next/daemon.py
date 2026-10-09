@@ -50,6 +50,34 @@ class Daemon:
         self._busy: set[str] = set()
         self.stopping = False
 
+    # ------------------------------------------------------------------ API chats
+    def api_router(self):
+        """A router with the configured API route (OpenAI-compatible gateway), or None when none is set up."""
+        import os
+        from .providers.openai_compat import OpenAICompatProvider
+        from .router import Route, Router
+        from .setup import load_secrets
+        load_secrets()
+        key = os.environ.get("EMARAAI_AI_KEY", "")
+        if not (self.cfg.ai.base_url and self.cfg.ai.model and key):
+            return None
+        r = Router(self.k.clock, self.k)
+        r.add(Route("api:" + self.cfg.ai.model, OpenAICompatProvider("api", self.cfg.ai.base_url, key), self.cfg.ai.model))
+        return r
+
+    async def run_api_member(self, project: str, member: str, text: str = "Read your inbox and work on your tasks."):
+        from .agent import AgentRuntime
+        from .providers.base import Capabilities
+        from .toolbook import Session
+        r = self.api_router()
+        if r is None:
+            raise RuntimeError("No AI API is set up: run `emaraai-next setup` (question 4) and set EMARAAI_AI_KEY.")
+        c = self.chats.start(project, member, provider="api")
+        me = self.team.member(c.project_id, member)
+        return await AgentRuntime(r, kernel=self.k).run(system=f"You are {member} ({me['title']}). {me['instructions']}".strip(),
+                                                        context=lambda: text, tools=self.book.tools(Session(c.project_id, member, c.id)),
+                                                        need=Capabilities(tool_calls=True))
+
     # ------------------------------------------------------------------ web chats
     def start_web_chat(self, project: str, member: str, site: str = "claude_web") -> str:
         """Open a chat for a member in the owner's Chrome (site: claude_web | gemini_web). Returns the chat id."""
