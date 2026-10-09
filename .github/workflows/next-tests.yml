@@ -21,3 +21,31 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: python -m pip install -e ".[dev]"
       - run: python -m pytest -q -p no:cacheprovider
+  install-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: install.ps1
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File next\scripts\install.ps1
+      - name: serve answers /v1/health
+        shell: pwsh
+        run: |
+          $exe = "$env:USERPROFILE\.emaraai-next\venv\Scripts\emaraai-next.exe"
+          $p = Start-Process $exe -ArgumentList "serve" -PassThru -WorkingDirectory "$env:USERPROFILE\.emaraai-next"
+          $ok = $false
+          foreach ($i in 1..30) { Start-Sleep 1; try { $r = Invoke-RestMethod http://127.0.0.1:8810/v1/health; if ($r.ok) { $ok = $true; break } } catch {} }
+          Stop-Process -Id $p.Id -Force
+          if (-not $ok) { throw "the node did not answer" }
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t emaraai-next next
+      - run: |
+          docker run -d --name n -p 8810:8810 emaraai-next
+          for i in $(seq 1 30); do curl -sf 127.0.0.1:8810/v1/health && exit 0; sleep 1; done
+          docker logs n; exit 1

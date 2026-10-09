@@ -1,0 +1,23 @@
+# Copy to emaraai.toml (next to where you run emaraai-next) or to ~/.emaraai-next/emaraai.toml.
+# Any value can also come from the environment: EMARAAI_<SECTION>_<KEY>, e.g. EMARAAI_BACKUP_GIT_REMOTE.
+# Secrets (API keys, tokens) do NOT go here.
+
+[node]
+name = "my-pc"
+data_dir = "~/.emaraai-next"
+host = "127.0.0.1"        # 0.0.0.0 only behind a firewall / reverse proxy with auth
+port = 8810
+
+[backup]
+# Code projects: any git remote. Examples:
+#   "https://github.com/me/my-project.git"   "https://gitlab.com/me/p.git"
+#   "D:/backups/my-project.git"               "/mnt/nas/git/my-project.git"
+git_remote = ""
+# Files projects: any synced folder. Examples:
+#   "G:/My Drive/EmaraAI"   "C:/Users/me/OneDrive/EmaraAI"   "/mnt/nas/emaraai"
+drive_folder = ""
+
+[worker]
+enabled = true
+poll_seconds = 5
+assignees = ["runner"]

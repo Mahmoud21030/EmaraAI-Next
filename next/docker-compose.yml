@@ -1,0 +1,15 @@
+# docker compose up -d     (from the next/ folder)
+services:
+  emaraai-next:
+    build: .
+    restart: unless-stopped
+    ports: ["127.0.0.1:8810:8810"]
+    volumes:
+      - emaraai-data:/data
+      # - /path/to/synced/folder:/drive        # then EMARAAI_BACKUP_DRIVE_FOLDER=/drive
+    environment:
+      EMARAAI_NODE_NAME: docker-node
+      EMARAAI_BACKUP_GIT_REMOTE: ""            # any git remote
+      # ANTHROPIC_API_KEY: set it in a .env file, never here
+volumes:
+  emaraai-data:

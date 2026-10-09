@@ -44,6 +44,33 @@ part of ADR-0005.
 Run on GitHub: `.github/workflows/emaraai-runner.yml` (Actions → emaraai-runner → Run workflow). First run with
 `init = examples/smoke-project.json` creates the project and prints its id; later runs take `project = P-...`.
 
+## Run it anywhere
+
+GitHub is only one place it can run. The same program runs as a long-lived node on any machine:
+
+| Where | How |
+|---|---|
+| **Your Windows PC** | `powershell -ExecutionPolicy Bypass -File next\scripts\install.ps1`, then `emaraai-next serve`. Start with Windows: `next\scripts\autostart.ps1` |
+| **Linux / macOS / VPS** | `sh next/scripts/install.sh`, then `emaraai-next serve` (or `systemctl --user enable --now emaraai-next`) |
+| **Docker** | `cd next && docker compose up -d` |
+| **GitHub Actions** | `.github/workflows/emaraai-runner.yml` (one-shot worker) |
+| **Any CI** | `emaraai-next worker --project P-... --remote <git url>` |
+
+Settings: `emaraai.toml` (see `emaraai.example.toml`) or `EMARAAI_<SECTION>_<KEY>` environment variables.
+Backup targets are not tied to GitHub: `git_remote` can be any git remote (GitLab, Gitea, a bare repo on a NAS or USB
+disk) and `drive_folder` any synced folder (Google Drive for desktop, OneDrive, Dropbox, a network share).
+
+Move a project to another machine: install there, point it at the same backup, run `emaraai-next restore P-...`.
+The node continues interrupted work by itself after a crash or reboot.
+
+```
+emaraai-next init examples/smoke-project.json     # create a project
+emaraai-next status                               # projects and open tasks
+emaraai-next serve                                # API on 127.0.0.1:8810 + worker + backup + janitor
+```
+
+## Development
+
 ```
 pip install -e ".[dev]"
 python -m pytest -q
