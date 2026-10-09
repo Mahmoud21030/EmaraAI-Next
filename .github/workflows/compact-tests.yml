@@ -8,7 +8,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        os: [windows-latest]   # compact is a Windows app: PowerShell, cmd and Windows paths
     runs-on: ${{ matrix.os }}
     defaults:
       run:
