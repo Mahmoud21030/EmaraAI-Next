@@ -1,0 +1,2 @@
+[console_scripts]
+emaraai-next = emaraai_next.__main__:main

@@ -11,7 +11,7 @@ by time limit, by credit, by crash. Today a new session has to be told by hand w
 1. **Execution happens on runners by default.** A runner is a disposable machine (GitHub-hosted Windows/Linux runner,
    a self-hosted runner, or a cloud VM). Builds, tests, PowerShell, file work and tool calls of a task run there.
 2. **Web-chat providers stay on a stable browser host.** Chats that need the owner's signed-in Chrome
-   (ChatGPT, claude.ai, Gemini) run on one fixed machine: the owner's PC or a dedicated Windows VPS.
+   (ChatGPT, claude.ai, Gemini) run on one fixed machine. **Decided: the owner's PC** (a dedicated Windows VPS stays an option).
    Sessions/cookies are never copied to ephemeral runners (logins break, captchas, account risk, terms of use).
 3. **No result lives only on a runner.** A runner is assumed to disappear at any moment (GitHub jobs: 6 h max).
    - **Code project** → work is pushed to GitHub: task branch per attempt, commit after every completed step.
