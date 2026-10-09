@@ -39,6 +39,8 @@ part of ADR-0005.
 | Module | What it does |
 |---|---|
 | `team.py` | Persistent identities (manager, title, instructions, skills, route, status with reason); plan steps whose progress comes from tasks; assignment; independent review (an author cannot accept their own work); questions to manager/owner, and owner questions that time out go to the master |
+| `chats.py` | Chat sessions (one live chat per member; a new one replaces the old and requeues its unacked mail) and the supervisor: wake on mail, continue unfinished work, escalate to the manager after ignored prompts; never prompts a chat that is holding a pause |
+| `mcp_server.py` | MCP connectors at `/mcp/master/mcp` and `/mcp/agent/mcp` (session_start, team_hub, work); localhost and this PC's Tailscale name only |
 | `toolbook.py` | What a chat sees: `team_hub` and `work`, each with an `action` and `help`; master-only actions; every call acks earlier mail; the attempt's fence stays server-side |
 
 Run on GitHub: `.github/workflows/emaraai-runner.yml` (Actions → emaraai-runner → Run workflow). First run with

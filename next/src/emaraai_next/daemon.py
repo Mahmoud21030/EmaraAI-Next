@@ -17,7 +17,9 @@ from .config import Config
 from .janitor import Janitor
 from .kernel import Kernel
 from .store import Store
+from .chats import Chats
 from .team import Team
+from .toolbook import Toolbook
 from .worker import Worker
 
 log = logging.getLogger("emaraai.daemon")
@@ -32,6 +34,8 @@ class Daemon:
         self.worker = Worker(self.k, cfg.data, name=cfg.node.name, drive=drive)
         self.team = Team(self.k)
         self.janitor = Janitor(self.k, self.worker.ws)
+        self.book = Toolbook(self.k, self.team)
+        self.chats = Chats(self.k, self.team)          # notify is wired by the browser bridge (phase 7)
         self._last_janitor = self._last_snapshot = 0.0
         self._busy: set[str] = set()
         self.stopping = False
@@ -52,6 +56,7 @@ class Daemon:
         did = {"outbox": 0, "questions": 0, "tasks": [], "janitor": None, "snapshots": 0}
         did["outbox"] = await self.worker.dispatcher.run_once(limit=100)
         did["questions"] = self.team.expire_questions()
+        did["prompts"] = await self.chats.tick()
         now = time.monotonic()
         if now - self._last_janitor >= self.cfg.worker.janitor_every_seconds:
             self._last_janitor = now

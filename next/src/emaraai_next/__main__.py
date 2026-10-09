@@ -68,7 +68,12 @@ def main(argv: list[str] | None = None) -> int:
             import uvicorn
 
             from .api import build_app
-            server = uvicorn.Server(uvicorn.Config(build_app(d.k, d.worker.resumer, node=cfg.node.name), host=cfg.node.host, port=cfg.node.port, log_level="info"))
+            from .api import with_mcp
+            from .setup import on_ci_or_runner, tailscale_exe, tailscale_url
+            ts = tailscale_exe() if not on_ci_or_runner() else None
+            ts_host = tailscale_url(ts).removeprefix("https://") if ts else ""
+            app = with_mcp(build_app(d.k, d.worker.resumer, node=cfg.node.name), d.book, d.chats, hosts=[ts_host] if ts_host else [])
+            server = uvicorn.Server(uvicorn.Config(app, host=cfg.node.host, port=cfg.node.port, log_level="info"))
             tasks.append(asyncio.create_task(server.serve()))
         await asyncio.gather(*tasks)
     asyncio.run(serve())

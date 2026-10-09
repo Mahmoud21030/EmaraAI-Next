@@ -86,3 +86,31 @@ def build_app(kernel: Kernel, resumer: Resumer | None = None, *, node: str = "")
                                                                                 hold_seconds=float(b.get("hold_seconds", 60)))), methods=["POST"]),
     ]
     return Starlette(routes=routes)
+
+
+def with_mcp(app: Starlette, book, chats, *, hosts: list[str] | None = None) -> Starlette:
+    """Mount the MCP servers next to the REST API: /mcp/master and /mcp/agent (streamable HTTP).
+
+    DNS-rebinding protection stays on: only localhost and the given hosts (this PC's Tailscale name) are accepted."""
+    import contextlib
+
+    from starlette.routing import Mount
+
+    from mcp.server.transport_security import TransportSecuritySettings
+
+    from .mcp_server import build_mcp
+    allowed = ["127.0.0.1", "127.0.0.1:*", "localhost", "localhost:*", *(hosts or [])]
+    security = TransportSecuritySettings(enable_dns_rebinding_protection=True, allowed_hosts=allowed,
+                                         allowed_origins=[f"https://{h}" for h in hosts or []] + ["http://127.0.0.1:*", "http://localhost:*"])
+    servers = {kind: build_mcp(book, chats, kind=kind) for kind in ("master", "agent")}
+    subs = {kind: s.streamable_http_app(json_response=True, stateless_http=True, transport_security=security) for kind, s in servers.items()}
+
+    @contextlib.asynccontextmanager
+    async def lifespan(_):
+        async with contextlib.AsyncExitStack() as stack:
+            for s in servers.values():
+                await stack.enter_async_context(s.session_manager.run())
+            yield
+
+    routes = list(app.routes) + [Mount(f"/mcp/{kind}", app=sub) for kind, sub in subs.items()]
+    return Starlette(routes=routes, lifespan=lifespan)

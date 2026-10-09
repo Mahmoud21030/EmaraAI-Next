@@ -37,7 +37,7 @@ Pass cleanup/restart tests and the ADR-0005 kill-runner/end-session resume tests
 - session independence.
 
 ## Phase 4 — Tasks/Team/Communication
-**Status: core implemented in `next/` (identities, plan, assignment, independent review, owner/manager questions with timeout, tool surface). Not yet: supervisor policies, decision rooms, MCP transport.**
+**Status: core implemented in `next/` (identities, plan, assignment, independent review, owner/manager questions with timeout, tool surface). Supervisor policies and MCP connectors done. Not yet: decision rooms.**
 Port mature Compact concepts:
 projects, identities, hierarchy, inbox, plans, reviews, owner decisions.
 
