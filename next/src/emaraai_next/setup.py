@@ -109,7 +109,8 @@ def autostart_windows() -> tuple[bool, str]:
     if not exe.exists():
         return False, f"{exe} not found"
     cmd = f'powershell -NoProfile -WindowStyle Hidden -Command "Set-Location $env:USERPROFILE\\.emaraai-next; & \'{exe}\' serve"'
-    with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE) as k:
+    # CreateKeyEx: the Run key does not exist on a fresh profile until something adds an entry
+    with winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Run", 0, winreg.KEY_SET_VALUE) as k:
         winreg.SetValueEx(k, "EmaraAI Next", 0, winreg.REG_SZ, cmd)
     return True, cmd
 
@@ -131,7 +132,10 @@ def run(yes: bool = False, path: Path = CFG_FILE) -> dict:
         ok, msg = tailscale_publish(cfg.node.port)
         result["tailscale"] = msg if ok else f"not enabled: {msg}"
     if os.name == "nt" and ask_yes("5) Start EmaraAI Next when Windows starts?", True, yes):
-        ok, msg = autostart_windows()
+        try:
+            ok, msg = autostart_windows()
+        except OSError as e:                     # never let an optional step break setup
+            ok, msg = False, str(e)
         result["autostart"] = "on" if ok else f"failed: {msg}"
     print(f"\nDone. Settings saved in {written}")
     print(f"  This computer:  http://127.0.0.1:{cfg.node.port}")
