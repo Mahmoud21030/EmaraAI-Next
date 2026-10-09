@@ -26,8 +26,11 @@ PROJECT_TABLES = {
     "messages": "SELECT * FROM messages WHERE project_id = ?",
     "message_recipients": "SELECT r.* FROM message_recipients r JOIN messages m ON m.id = r.message_id WHERE m.project_id = ?",
     "events": "SELECT * FROM events WHERE project_id = ?",
+    "identities": "SELECT * FROM identities WHERE project_id = ?",
+    "plans": "SELECT * FROM plans WHERE project_id = ?",
+    "questions": "SELECT * FROM questions WHERE project_id = ?",
 }
-RESTORE_ORDER = ["projects", "tasks", "task_dependencies", "workspaces", "attempts", "leases", "messages", "message_recipients", "events"]
+RESTORE_ORDER = ["projects", "tasks", "task_dependencies", "workspaces", "attempts", "leases", "messages", "message_recipients", "events", "identities", "plans", "questions"]
 KEYS = {"task_dependencies": ("task_id", "depends_on"), "leases": ("resource_id",), "message_recipients": ("message_id", "recipient"),
         "events": ("seq",)}
 

@@ -34,6 +34,13 @@ part of ADR-0005.
 | `router.py` | Filters (capabilities, privacy, state, owner policy: pin / no API / no web / local only / spend cap), then ranks; returns why, fallbacks, rejected; limit blocks lift at reset |
 | `agent.py` | Agent loop: tools through a broker; on a route failure it switches route and restarts from durable context, not the old transcript; a held pause that returns mail keeps the turn going |
 
+### Phase 4 — team, plan, decisions, tool surface
+
+| Module | What it does |
+|---|---|
+| `team.py` | Persistent identities (manager, title, instructions, skills, route, status with reason); plan steps whose progress comes from tasks; assignment; independent review (an author cannot accept their own work); questions to manager/owner, and owner questions that time out go to the master |
+| `toolbook.py` | What a chat sees: `team_hub` and `work`, each with an `action` and `help`; master-only actions; every call acks earlier mail; the attempt's fence stays server-side |
+
 Run on GitHub: `.github/workflows/emaraai-runner.yml` (Actions → emaraai-runner → Run workflow). First run with
 `init = examples/smoke-project.json` creates the project and prints its id; later runs take `project = P-...`.
 

@@ -10,7 +10,7 @@ import threading
 from contextlib import contextmanager
 from pathlib import Path
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 MIGRATIONS = {
     1: """
@@ -73,6 +73,21 @@ CREATE TABLE resources (
 CREATE TABLE cleanup_runs (
   id TEXT PRIMARY KEY, started_at REAL NOT NULL, finished_at REAL, cleaned INTEGER NOT NULL DEFAULT 0,
   quarantined INTEGER NOT NULL DEFAULT 0, report TEXT NOT NULL DEFAULT '{}');
+""",
+    3: """
+CREATE TABLE identities (
+  id TEXT PRIMARY KEY, project_id TEXT REFERENCES projects(id), name TEXT NOT NULL, kind TEXT NOT NULL,
+  title TEXT NOT NULL DEFAULT '', manager TEXT NOT NULL DEFAULT '', team TEXT NOT NULL DEFAULT '', level TEXT NOT NULL DEFAULT '',
+  instructions TEXT NOT NULL DEFAULT '', skills TEXT NOT NULL DEFAULT '[]', route TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'ACTIVE', status_reason TEXT NOT NULL DEFAULT '', version INTEGER NOT NULL DEFAULT 1,
+  created_at REAL NOT NULL, UNIQUE (project_id, name));
+CREATE TABLE plans (
+  project_id TEXT PRIMARY KEY REFERENCES projects(id), overview TEXT NOT NULL DEFAULT '', architecture TEXT NOT NULL DEFAULT '',
+  steps TEXT NOT NULL DEFAULT '[]', version INTEGER NOT NULL DEFAULT 1, updated_at REAL NOT NULL);
+CREATE TABLE questions (
+  id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id), asker TEXT NOT NULL, target TEXT NOT NULL,
+  text TEXT NOT NULL, task_id TEXT, status TEXT NOT NULL, answer TEXT NOT NULL DEFAULT '', answered_by TEXT NOT NULL DEFAULT '',
+  deadline REAL, created_at REAL NOT NULL, answered_at REAL);
 """,
 }
 

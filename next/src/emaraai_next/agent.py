@@ -87,7 +87,7 @@ class AgentRuntime:
                             out, err = json.dumps(e.to_dict(), ensure_ascii=False), True
                         except (KeyError, TypeError, ValueError) as e:
                             out, err = f"bad arguments: {e}", True
-                        ended = ended or (tool.ends_turn and not err and not _resumed(out))
+                        ended = ended or (not err and (_paused(out) or (tool.ends_turn and not _resumed(out))))
                     res.tool_log.append({"route": route.id, "tool": call.name, "error": err})
                     results.append((call, out, err))
                 messages.append(route.provider.tool_results_message(results))
@@ -103,5 +103,13 @@ def _resumed(out: str) -> bool:
     """A held pause that returned mail (paused=false) does not end the turn: the agent continues in the same reply."""
     try:
         return json.loads(out).get("paused") is False
+    except (ValueError, AttributeError):
+        return False
+
+
+def _paused(out: str) -> bool:
+    """Any tool result {"paused": true} ends the turn (team_hub action='pause')."""
+    try:
+        return json.loads(out).get("paused") is True
     except (ValueError, AttributeError):
         return False
