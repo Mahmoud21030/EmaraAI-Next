@@ -35,9 +35,12 @@ PROJECT_TABLES = {
     "verifications": "SELECT v.* FROM verifications v JOIN attempts a ON a.id = v.attempt_id JOIN tasks t ON t.id = a.task_id WHERE t.project_id = ?",
     "waivers": "SELECT w.* FROM waivers w JOIN tasks t ON t.id = w.task_id WHERE t.project_id = ?",
     "reputation": "SELECT * FROM reputation WHERE project_id = ?",
+    "memories": "SELECT * FROM memories WHERE project_id = ?",
+    "checkpoints": "SELECT * FROM checkpoints WHERE project_id = ?",
+    "skill_pins": "SELECT * FROM skill_pins WHERE project_id = ?",
 }
 RESTORE_ORDER = ["projects", "tasks", "task_dependencies", "workspaces", "attempts", "leases", "messages", "message_recipients", "events", "identities", "plans", "questions", "artifacts", "evidence_sets",
-                 "hidden_checks", "verifications", "waivers", "reputation"]
+                 "hidden_checks", "verifications", "waivers", "reputation", "memories", "checkpoints", "skill_pins"]
 KEYS = {"reputation": ("id",), "task_dependencies": ("task_id", "depends_on"), "leases": ("resource_id",), "message_recipients": ("message_id", "recipient"),
         "events": ("seq",)}
 
@@ -104,5 +107,9 @@ class Snapshots:
                     cols = list(row)
                     self.k.db.run(f"INSERT OR IGNORE INTO {table} ({','.join(cols)}) VALUES ({','.join('?' * len(cols))})",
                                   *[row[c] for c in cols])
+            # the search index is rebuildable, the records are canonical (DATA_ARCHITECTURE §7)
+            for m in doc["tables"].get("memories", []):
+                if not self.k.db.one("SELECT 1 FROM memories_fts WHERE id = ?", m["id"]):
+                    self.k.db.run("INSERT INTO memories_fts (id, title, body, tags) VALUES (?,?,?,?)", m["id"], m["title"], m["body"], m["tags"])
             self.k.event("snapshot.restored", subject=doc["snapshot_id"], project_id=project_id, skipped=len(skipped))
         return {"snapshot_id": doc["snapshot_id"], "created_at": doc["created_at"], "skipped": skipped}

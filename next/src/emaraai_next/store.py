@@ -10,7 +10,7 @@ import threading
 from contextlib import contextmanager
 from pathlib import Path
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 
 MIGRATIONS = {
     1: """
@@ -110,6 +110,22 @@ CREATE TABLE reputation (
 CREATE TABLE eval_results (
   id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL, case_id TEXT NOT NULL, route TEXT NOT NULL, passed INTEGER NOT NULL,
   seconds REAL NOT NULL, cost REAL NOT NULL DEFAULT 0, detail TEXT NOT NULL DEFAULT '', created_at REAL NOT NULL);
+""",
+    5: """
+CREATE TABLE memories (
+  id TEXT PRIMARY KEY, project_id TEXT, scope TEXT NOT NULL, owner TEXT NOT NULL DEFAULT '', type TEXT NOT NULL,
+  title TEXT NOT NULL, body TEXT NOT NULL, tags TEXT NOT NULL DEFAULT '', source TEXT NOT NULL DEFAULT '', author TEXT NOT NULL,
+  confidence REAL NOT NULL DEFAULT 0.5, status TEXT NOT NULL, supersedes TEXT, contradicts TEXT, used INTEGER NOT NULL DEFAULT 0,
+  helpful INTEGER NOT NULL DEFAULT 0, created_at REAL NOT NULL, verified_at REAL);
+CREATE VIRTUAL TABLE memories_fts USING fts5(id UNINDEXED, title, body, tags, tokenize = 'unicode61 remove_diacritics 2');
+CREATE TABLE checkpoints (
+  id TEXT PRIMARY KEY, project_id TEXT NOT NULL, member TEXT NOT NULL, summary TEXT NOT NULL, next_steps TEXT NOT NULL,
+  open_questions TEXT NOT NULL, files TEXT NOT NULL, created_at REAL NOT NULL);
+CREATE TABLE skills (
+  name TEXT NOT NULL, version TEXT NOT NULL, purpose TEXT NOT NULL, roles TEXT NOT NULL DEFAULT '[]', body TEXT NOT NULL,
+  sha256 TEXT NOT NULL, status TEXT NOT NULL, source TEXT NOT NULL DEFAULT '', created_at REAL NOT NULL, PRIMARY KEY (name, version));
+CREATE TABLE skill_pins (
+  project_id TEXT NOT NULL, member TEXT NOT NULL, name TEXT NOT NULL, version TEXT NOT NULL, PRIMARY KEY (project_id, member, name));
 """,
 }
 

@@ -49,6 +49,14 @@ part of ADR-0005.
 |---|---|
 | `quality.py` | Gates: evidence per acceptance criterion, artifact hashes re-checked, diff scan for secrets/debug leftovers, waivers (gate, reason, approver; never the author). Hidden checks the author never sees, run by an independent verifier on its own branch from what the author pushed; acceptance blocked until they pass. Reputation events per member and per route with decay; scores can drive router preference. `Lab` runs the same cases on several routes and ranks pass rate / cost / time |
 
+### Phase 6 — memory and skills
+
+| Module | What it does |
+|---|---|
+| `memory.py` | Typed memory (fact, decision, lesson, procedure, preference) with scope, provenance and confidence; DRAFT -> VALIDATED, contradictions keep both records, supersede archives; SQLite FTS5 search (Arabic too) ranked by validation, confidence, recency and usefulness; checkpoints and a boot packet for every new chat; review notes become draft lessons. Skills: versioned SKILL.md packages, DRAFT -> ACTIVE, pinned per member, never granting tools |
+
+Chats get a `memory` tool (save, search, get, checkpoint, skill) and `session_start` returns the boot packet.
+
 Run on GitHub: `.github/workflows/emaraai-runner.yml` (Actions → emaraai-runner → Run workflow). First run with
 `init = examples/smoke-project.json` creates the project and prints its id; later runs take `project = P-...`.
 

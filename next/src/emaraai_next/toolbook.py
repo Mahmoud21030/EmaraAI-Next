@@ -37,6 +37,13 @@ WORK_ACTIONS = {
     "hire": "name, title, instructions, manager?, kind?=agent|reviewer - master: add a member.",
     "list_team": "The team: names, titles, managers, status.",
 }
+MEMORY_ACTIONS = {
+    "save": "type=fact|decision|lesson|procedure|preference, title, body, tags=[...]? - remember something for the team.",
+    "search": "query - find what the team knows (ids, excerpts, sources).",
+    "get": "id - the full record.",
+    "checkpoint": "summary, next_steps=[...], open_questions=[...]? - where you are; a new chat continues from it.",
+    "skill": "name - read a skill assigned to you.",
+}
 MASTER_ONLY = {"assign_task", "review_task", "save_plan", "hire"}
 
 
@@ -55,8 +62,9 @@ class Session:
 
 
 class Toolbook:
-    def __init__(self, kernel: Kernel, team: Team, *, hold_seconds: float = 60.0):
+    def __init__(self, kernel: Kernel, team: Team, *, hold_seconds: float = 60.0, memory=None, skills=None):
         self.k, self.team, self.hold = kernel, team, hold_seconds
+        self.memory, self.skills = memory, skills
 
     def tools(self, s: Session) -> dict[str, Tool]:
         me = self.team.member(s.project_id, s.member)
@@ -140,7 +148,35 @@ class Toolbook:
                 return {"topic": args.get("topic"), "usage": work_actions.get(args.get("topic", ""), work_actions)}
             raise InvalidInput(f"work has no action {a!r}.", fix=f"Actions: {', '.join(work_actions)}")
 
+        async def memory(args: dict):
+            self.k.ack(s.session_id)
+            a = args.get("action")
+            if self.memory is None:
+                raise InvalidInput("Memory is not enabled on this node.")
+            if a == "save":
+                return self.memory.save(project_id=s.project_id, type=args.get("type", "fact"), title=args["title"], body=args["body"],
+                                        author=s.member, tags=args.get("tags"), source=(s.attempt or {}).get("task_id", ""),
+                                        validated=is_master and args.get("type") == "decision")
+            if a == "search":
+                return {"results": self.memory.search(args["query"], project_id=s.project_id, member=s.member)}
+            if a == "get":
+                m = self.memory.get(args["id"])
+                self.memory.feedback(m["id"], helpful=True)
+                return {k: m[k] for k in ("id", "type", "title", "body", "status", "source", "author", "contradicts")}
+            if a == "checkpoint":
+                return self.memory.checkpoint(s.project_id, s.member, summary=args["summary"], next_steps=args.get("next_steps") or [],
+                                              open_questions=args.get("open_questions"))
+            if a == "skill":
+                if self.skills is None:
+                    raise InvalidInput("Skills are not enabled on this node.")
+                return self.skills.read(s.project_id, s.member, args["name"])
+            if a == "help":
+                return {"topic": args.get("topic"), "usage": MEMORY_ACTIONS.get(args.get("topic", ""), MEMORY_ACTIONS)}
+            raise InvalidInput(f"memory has no action {a!r}.", fix=f"Actions: {', '.join(MEMORY_ACTIONS)}")
+
         return {
+            "memory": Tool(ToolSpec("memory", "Team knowledge and handoff. " + " ".join(f"{k}: {v}" for k, v in MEMORY_ACTIONS.items()),
+                                    _schema(MEMORY_ACTIONS)), memory),
             "team_hub": Tool(ToolSpec("team_hub", "Inbox, messages, questions and waiting. " +
                                       " ".join(f"{k}: {v}" for k, v in TEAM_ACTIONS.items()), _schema(TEAM_ACTIONS)), team_hub,
                              ends_turn=False),

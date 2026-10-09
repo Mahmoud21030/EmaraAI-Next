@@ -51,6 +51,7 @@ projects, identities, hierarchy, inbox, plans, reviews, owner decisions.
 - router baseline.
 
 ## Phase 6 — Memory/Skills
+**Status: implemented in `next/memory.py` (typed memory, FTS5 hybrid ranking, contradictions, checkpoints/boot packet, versioned pinned skills). Embedding search not added: FTS5 first, measure before adding.**
 - typed memory.
 - hybrid retrieval.
 - skill packages.

@@ -34,7 +34,9 @@ class Daemon:
         self.worker = Worker(self.k, cfg.data, name=cfg.node.name, drive=drive)
         self.team = Team(self.k)
         self.janitor = Janitor(self.k, self.worker.ws)
-        self.book = Toolbook(self.k, self.team)
+        from .memory import Memory, Skills
+        self.memory, self.skills = Memory(self.k), Skills(self.k)
+        self.book = Toolbook(self.k, self.team, memory=self.memory, skills=self.skills)
         self.chats = Chats(self.k, self.team)          # notify is wired by the browser bridge (phase 7)
         self._last_janitor = self._last_snapshot = 0.0
         self._busy: set[str] = set()
