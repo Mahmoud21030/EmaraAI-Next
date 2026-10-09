@@ -36,7 +36,36 @@ def test_answers_typed_by_hand(tmp_path, monkeypatch):
     assert c.node.name == "office-pc" and c.backup.drive_folder == ""
 
 
+def test_ci_and_runners_never_touch_tailscale(monkeypatch):
+    calls = []
+    monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    monkeypatch.setattr(setup, "tailscale_exe", lambda: "tailscale")
+    monkeypatch.setattr(setup.subprocess, "run", lambda *a, **kw: calls.append(a))
+    ok, msg = setup.tailscale_publish(8810)
+    assert not ok and "never join" in msg and calls == []
+
+
+def _no_ci(monkeypatch):
+    for v in ("CI", "GITHUB_ACTIONS", "EMARAAI_EPHEMERAL", "RUNNER_TEMP"):
+        monkeypatch.delenv(v, raising=False)
+
+
+def test_setup_never_logs_in_or_adds_a_device(monkeypatch):
+    _no_ci(monkeypatch)
+    calls = []
+    monkeypatch.setattr(setup, "tailscale_exe", lambda: "tailscale")
+    monkeypatch.setattr(setup, "tailscale_url", lambda exe: "https://pc.ts.net")
+
+    class R:
+        returncode, stdout, stderr = 0, "", ""
+    monkeypatch.setattr(setup.subprocess, "run", lambda args, **kw: calls.append(args) or R())
+    for _ in range(3):                                   # setup run three times on the same PC
+        setup.tailscale_publish(8810)
+    assert all(c[1] == "serve" for c in calls)           # only 'serve'; never 'up' / 'login'
+
+
 def test_tailscale_serve_keeps_the_node_on_localhost(tmp_path, monkeypatch):
+    _no_ci(monkeypatch)
     calls = []
     monkeypatch.setattr(setup, "tailscale_exe", lambda: "tailscale")
     monkeypatch.setattr(setup, "tailscale_url", lambda exe: "https://pc.tail1234.ts.net")
@@ -50,6 +79,7 @@ def test_tailscale_serve_keeps_the_node_on_localhost(tmp_path, monkeypatch):
 
 
 def test_tailscale_not_logged_in_says_what_to_do(monkeypatch):
+    _no_ci(monkeypatch)
     monkeypatch.setattr(setup, "tailscale_exe", lambda: "tailscale")
     monkeypatch.setattr(setup, "tailscale_url", lambda exe: "")
     ok, msg = setup.tailscale_publish(8810)

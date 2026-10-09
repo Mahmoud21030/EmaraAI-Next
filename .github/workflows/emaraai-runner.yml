@@ -1,6 +1,7 @@
 # Runs EmaraAI Next tasks on a disposable GitHub runner (ADR-0005).
 # State lives on the `emaraai-state` branch of the project's repository; code goes to emara/<project>/<task>/<attempt> branches.
 # One run per project at a time (concurrency group), so two runners never work on the same project state.
+# Runners never join Tailscale (no device is added per run): they only use the git remote / Drive backups.
 name: emaraai-runner
 on:
   workflow_dispatch:

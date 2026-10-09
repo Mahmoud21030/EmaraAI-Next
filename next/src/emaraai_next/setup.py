@@ -52,9 +52,19 @@ def tailscale_url(exe: str) -> str:
     return f"https://{dns}" if dns and st.get("BackendState") == "Running" else ""
 
 
+def on_ci_or_runner() -> bool:
+    """GitHub Actions and other CI/disposable runners must never touch Tailscale: each run would add one more device."""
+    return any(os.environ.get(v) for v in ("CI", "GITHUB_ACTIONS", "EMARAAI_EPHEMERAL", "RUNNER_TEMP"))
+
+
 def tailscale_publish(port: int) -> tuple[bool, str]:
     """Make the node reachable from your own Tailscale devices only (tailscale serve: HTTPS, tailnet-only, nothing
-    opened to the internet). The node itself keeps listening on 127.0.0.1."""
+    opened to the internet). The node itself keeps listening on 127.0.0.1.
+
+    It never runs `tailscale up` / login: it only publishes on a machine that is already in your tailnet, so running
+    setup again (or on the same PC after a reinstall) never adds a device."""
+    if on_ci_or_runner():
+        return False, "skipped on CI/runner machines (they never join Tailscale)."
     exe = tailscale_exe()
     if not exe:
         return False, "Tailscale is not installed."
@@ -117,7 +127,7 @@ def run(yes: bool = False, path: Path = CFG_FILE) -> dict:
                                   cfg.backup.drive_folder, yes)
     written = write(cfg, path)
     result = {"config": str(written), "tailscale": None, "autostart": None}
-    if tailscale_exe() and ask_yes("4) Reach this computer from your phone/laptop through Tailscale?", True, yes):
+    if not on_ci_or_runner() and tailscale_exe() and ask_yes("4) Reach this computer from your phone/laptop through Tailscale?", True, yes):
         ok, msg = tailscale_publish(cfg.node.port)
         result["tailscale"] = msg if ok else f"not enabled: {msg}"
     if os.name == "nt" and ask_yes("5) Start EmaraAI Next when Windows starts?", True, yes):

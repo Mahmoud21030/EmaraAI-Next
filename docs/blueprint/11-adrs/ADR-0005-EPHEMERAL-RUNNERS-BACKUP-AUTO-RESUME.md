@@ -64,3 +64,12 @@ see DURABILITY_AND_MESSAGING.md).
 3. Corrupt the latest snapshot → resume uses the previous one and reports it.
 4. Non-code task → all artifacts present on Drive with matching checksums after resume.
 5. Backup target down → work continues, items marked `unbacked`, flushed when it returns.
+
+## Tailscale and runners
+- Only the owner's PC (the stable browser host) is in the owner's tailnet. It is one device, whatever how often setup runs:
+  setup never runs `tailscale up`/login, it only runs `tailscale serve` on a machine that is already signed in.
+- Ephemeral runners (GitHub Actions, CI, disposable VMs) never join the tailnet. Setup detects CI/runners
+  (`CI`, `GITHUB_ACTIONS`, `RUNNER_TEMP`, `EMARAAI_EPHEMERAL`) and skips Tailscale. Runners talk to backups (git remote /
+  Drive folder) only, so they do not need to reach the PC.
+- If a runner ever must reach the PC, it uses an **ephemeral, tagged** auth key (`tag:emaraai-runner`): Tailscale removes
+  such a node automatically as soon as it goes offline, so the device list never fills up.
