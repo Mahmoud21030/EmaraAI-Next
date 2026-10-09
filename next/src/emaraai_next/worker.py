@@ -41,7 +41,9 @@ class Worker:
         self.snaps = Snapshots(kernel, self.root / "snapshots")
         self.backup = Backup(kernel, self.ws, self.snaps, drive=drive)
         self.resumer = Resumer(kernel, self.snaps)
-        self.runner = Runner(kernel, self.ws)
+        from .approvals import Approvals
+        self.approvals = Approvals(kernel)
+        self.runner = Runner(kernel, self.ws, approvals=self.approvals)
         self.dispatcher = Dispatcher(kernel, name=f"{name}-outbox")
         self.backup.register(self.dispatcher)
         self.dispatcher.on("attempt.cleanup", lambda p: {"deferred": "janitor"})

@@ -59,13 +59,27 @@ def _kill_tree(proc: subprocess.Popen) -> None:
 
 
 class Runner:
-    def __init__(self, kernel: Kernel, workspaces: Workspaces):
+    def __init__(self, kernel: Kernel, workspaces: Workspaces, *, approvals=None):
         self.k = kernel
         self.ws = workspaces
+        self.approvals = approvals
 
     def run(self, workspace_id: str, command: str, *, fence: int | None = None, shell: str = "auto",
             timeout: float = 600.0, env: dict | None = None, owner: str = "") -> Result:
         cwd = self.ws.require_owned(workspace_id, fence)
+        if self.approvals is not None:
+            from .approvals import risk
+            why = risk(command)
+            if why and not self.approvals.consume(action=command, scope=workspace_id):
+                w = self.ws.get(workspace_id)
+                req = self.approvals.request(project_id=w["project_id"], by=owner or "agent", action=command, scope=workspace_id, reason=why)
+                from .errors import KernelError
+
+                class ApprovalRequired(KernelError):
+                    code = "APPROVAL_REQUIRED"
+                    retry_safe = True
+                raise ApprovalRequired(f"This command needs the owner's approval ({why}).",
+                                       fix=f"Wait for approval {req['id']}, then run the same command again.", approval_id=req["id"])
         argv = shell_argv(command, shell)
         kw = {"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if IS_WINDOWS else {"start_new_session": True}
         t0 = time.monotonic()

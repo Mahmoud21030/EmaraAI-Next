@@ -50,6 +50,9 @@ async function loadOwner() {
   const o = (await (await fetch("v1/owner")).json()).result;
   const n = document.getElementById("need");
   const items = [
+    ...(o.approvals || []).map(a => `<div class="card need" style="border-color:var(--bad)"><h2>موافقة مطلوبة: ${esc(a.reason)}</h2>
+      <div class="mute">${esc(a.by)} عايز يشغّل:</div><div style="direction:ltr;text-align:left;font-family:monospace">${esc(a.action)}</div>
+      <div class="acts"><button class="go" onclick="decide('${esc(a.id)}', true)">موافق</button><button onclick="decide('${esc(a.id)}', false)">رفض</button></div></div>`),
     ...o.questions.map(q => `<div class="card need"><h2>سؤال من ${esc(q.from)} · ${esc(q.project)}</h2><div>${esc(q.text)}</div>
       <textarea id="a-${esc(q.id)}" placeholder="ردك…" onfocus="typing=true" onblur="typing=false"></textarea>
       <div class="acts"><button class="go" onclick="answer('${esc(q.id)}')">ابعت الرد</button></div></div>`),
@@ -64,6 +67,7 @@ async function loadOwner() {
 }
 async function answer(id) { const v = document.getElementById("a-" + id).value.trim(); if (!v) return; typing = false; await post(`v1/questions/${id}/answer`, {text: v}); refresh(); }
 async function review(id, ok) { const v = (document.getElementById("n-" + id) || {}).value || ""; typing = false; await post(`v1/tasks/${id}/review`, {accept: ok, note: v}); refresh(); }
+async function decide(id, ok) { await post(`v1/approvals/${id}`, {approve: ok}); refresh(); }
 function refresh() { load(); loadOwner().catch(() => {}); }
 refresh(); setInterval(refresh, 5000);
 </script>

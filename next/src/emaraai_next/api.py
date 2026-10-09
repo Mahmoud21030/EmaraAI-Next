@@ -15,7 +15,7 @@ from .errors import KernelError
 from .kernel import Kernel
 from .resume import Resumer
 
-STATUS = {"INVALID_INPUT": 400, "NOT_FOUND": 404, "CONFLICT": 409, "FORBIDDEN": 403, "RESOURCE_BUSY": 423,
+STATUS = {"APPROVAL_REQUIRED": 428, "INVALID_INPUT": 400, "NOT_FOUND": 404, "CONFLICT": 409, "FORBIDDEN": 403, "RESOURCE_BUSY": 423,
           "UNCERTAIN_OUTCOME": 409, "INTERNAL": 500}
 
 
@@ -36,6 +36,7 @@ def owner_inbox(kernel: Kernel) -> dict:
     """What waits for the owner: questions to answer and work to review."""
     qs = kernel.db.all("SELECT q.*, p.name AS project FROM questions q JOIN projects p ON p.id = q.project_id "
                        "WHERE q.status = 'OPEN' AND q.target = 'owner' ORDER BY q.created_at")
+    qs = [q for q in qs]
     review = []
     for t in kernel.db.all("SELECT t.*, p.name AS project FROM tasks t JOIN projects p ON p.id = t.project_id WHERE t.status = 'REVIEW' ORDER BY t.updated_at"):
         a = kernel.db.one("SELECT checkpoint FROM attempts WHERE task_id = ? AND status = 'SUBMITTED' ORDER BY number DESC LIMIT 1", t["id"])
@@ -44,7 +45,9 @@ def owner_inbox(kernel: Kernel) -> dict:
         review.append({"id": t["id"], "title": t["title"], "project": t["project"], "assignee": t["assignee"],
                        "summary": cp.get("summary", ""), "evidence": cp.get("evidence", [])})
     events = kernel.db.all("SELECT seq, ts, kind, subject, actor FROM events ORDER BY seq DESC LIMIT 15")
-    return {"questions": [{"id": q["id"], "project": q["project"], "from": q["asker"], "text": q["text"], "deadline": q["deadline"]} for q in qs],
+    aps = kernel.db.all("SELECT * FROM approvals WHERE status = 'REQUESTED' AND expires_at > ? ORDER BY created_at", kernel.clock.now())
+    return {"approvals": [{"id": a["id"], "by": a["requested_by"], "action": a["action"], "reason": a["reason"]} for a in aps],
+            "questions": [{"id": q["id"], "project": q["project"], "from": q["asker"], "text": q["text"], "deadline": q["deadline"]} for q in qs],
             "review": review, "events": events}
 
 
@@ -102,6 +105,10 @@ def build_app(kernel: Kernel, resumer: Resumer | None = None, *, node: str = "",
         Route("/v1/projects/{pid}/pause", endpoint(lambda r, b, k: kernel.pause(p(r)["pid"], b["recipient"], b["session"],
                                                                                 hold_seconds=float(b.get("hold_seconds", 60)))), methods=["POST"]),
     ]
+    from .approvals import Approvals
+    approvals = Approvals(kernel)
+    routes.append(Route("/v1/approvals/{aid}", endpoint(lambda r, b, k: approvals.decide(r.path_params["aid"], approve=bool(b["approve"]), by="owner")),
+                        methods=["POST"]))
     if team is not None:
         def answer(r, b, k):
             q = kernel.db.one("SELECT project_id FROM questions WHERE id = ?", r.path_params["qid"])

@@ -75,6 +75,14 @@ The node runs a member in a web chat (`Daemon.start_web_chat`), and the supervis
 | `guard.py` | Only this PC and your Tailscale devices (loopback), or a bearer token you set; browser changes need `X-EmaraAI: 1` (blocks cross-site clicks) |
 | `integrations.py` | Signed webhooks (HMAC-SHA256, delivery id for de-duplication) for n8n and others, through the outbox with retries; each event once |
 
+### Phases 10-11 — migration and hardening
+
+| Module | What it does |
+|---|---|
+| `migrate_compact.py` | `emaraai-next import-compact <hub.db>`: read-only import of a Compact database (team, tasks with their state, mail, memory, plans), ids kept, re-runnable, reports what is not carried |
+| `approvals.py` | Risky commands (recursive delete, force push, git reset/clean, format, shutdown, system changes, piping downloads into a shell) wait for the owner; an approval is bound to the exact command and workspace, expires and is used once. Shown first on the owner page |
+| `tests/test_hardening.py` | Chaos (≈400 random operations with injected faults, invariants checked after every step), load (500 tasks, 2000 messages), restore drill (every table), no secrets in backups, disk full during a snapshot |
+
 Run on GitHub: `.github/workflows/emaraai-runner.yml` (Actions → emaraai-runner → Run workflow). First run with
 `init = examples/smoke-project.json` creates the project and prints its id; later runs take `project = P-...`.
 

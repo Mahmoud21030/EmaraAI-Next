@@ -70,9 +70,11 @@ Build over stable APIs; desktop/mobile/RTL/accessibility.
 n8n, outward API, remote workers, Android/PWA decisions.
 
 ## Phase 10 — Migration/Parity
+**Status: Compact importer in `next/migrate_compact.py`; parity in `09-migration/PARITY_STATUS.md`. Real-project pilot needs the owner's hub.db.**
 Compact importer, parity test suite, real project pilots.
 
 ## Phase 11 — Hardening
+**Status: chaos, load, restore drill, secret and disk-failure tests; approvals for risky commands; request guard. Long-run burn-in on the owner's PC still to do.**
 Chaos, security, long-run load, disk/resource failures, backup restore.
 
 ## Release Gates

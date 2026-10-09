@@ -9,6 +9,7 @@ Rules kept here:
 from __future__ import annotations
 
 import asyncio
+import re
 import hashlib
 import json
 import time
@@ -94,6 +95,9 @@ class Kernel:
                        key: str | None = None, actor: str = "owner") -> dict:
         if kind not in ("code", "files"):
             raise InvalidInput("kind must be 'code' (backup to GitHub) or 'files' (backup to Drive).")
+        if re.search(r"://[^/@\s]+@", backup_target or ""):
+            raise InvalidInput("The backup address contains a password or token.",
+                               fix="Use the plain URL (https://github.com/me/repo.git); credentials stay in git's credential manager.")
         if not name.strip():
             raise InvalidInput("A project needs a name.")
 
