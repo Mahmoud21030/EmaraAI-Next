@@ -29,9 +29,16 @@ PROJECT_TABLES = {
     "identities": "SELECT * FROM identities WHERE project_id = ?",
     "plans": "SELECT * FROM plans WHERE project_id = ?",
     "questions": "SELECT * FROM questions WHERE project_id = ?",
+    "artifacts": "SELECT * FROM artifacts WHERE project_id = ?",
+    "evidence_sets": "SELECT e.* FROM evidence_sets e JOIN attempts a ON a.id = e.attempt_id JOIN tasks t ON t.id = a.task_id WHERE t.project_id = ?",
+    "hidden_checks": "SELECT h.* FROM hidden_checks h JOIN tasks t ON t.id = h.task_id WHERE t.project_id = ?",
+    "verifications": "SELECT v.* FROM verifications v JOIN attempts a ON a.id = v.attempt_id JOIN tasks t ON t.id = a.task_id WHERE t.project_id = ?",
+    "waivers": "SELECT w.* FROM waivers w JOIN tasks t ON t.id = w.task_id WHERE t.project_id = ?",
+    "reputation": "SELECT * FROM reputation WHERE project_id = ?",
 }
-RESTORE_ORDER = ["projects", "tasks", "task_dependencies", "workspaces", "attempts", "leases", "messages", "message_recipients", "events", "identities", "plans", "questions"]
-KEYS = {"task_dependencies": ("task_id", "depends_on"), "leases": ("resource_id",), "message_recipients": ("message_id", "recipient"),
+RESTORE_ORDER = ["projects", "tasks", "task_dependencies", "workspaces", "attempts", "leases", "messages", "message_recipients", "events", "identities", "plans", "questions", "artifacts", "evidence_sets",
+                 "hidden_checks", "verifications", "waivers", "reputation"]
+KEYS = {"reputation": ("id",), "task_dependencies": ("task_id", "depends_on"), "leases": ("resource_id",), "message_recipients": ("message_id", "recipient"),
         "events": ("seq",)}
 
 

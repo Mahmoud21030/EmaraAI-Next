@@ -42,6 +42,7 @@ Port mature Compact concepts:
 projects, identities, hierarchy, inbox, plans, reviews, owner decisions.
 
 ## Phase 5 — Quality and Evaluation
+**Status: implemented in `next/quality.py` (evidence sets, gates, waivers, hidden verifier, competence scoring, router baseline, lab).**
 - evidence sets.
 - independent review.
 - hidden verifier.

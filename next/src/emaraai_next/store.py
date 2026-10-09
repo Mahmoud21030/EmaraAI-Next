@@ -10,7 +10,7 @@ import threading
 from contextlib import contextmanager
 from pathlib import Path
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 
 MIGRATIONS = {
     1: """
@@ -88,6 +88,28 @@ CREATE TABLE questions (
   id TEXT PRIMARY KEY, project_id TEXT NOT NULL REFERENCES projects(id), asker TEXT NOT NULL, target TEXT NOT NULL,
   text TEXT NOT NULL, task_id TEXT, status TEXT NOT NULL, answer TEXT NOT NULL DEFAULT '', answered_by TEXT NOT NULL DEFAULT '',
   deadline REAL, created_at REAL NOT NULL, answered_at REAL);
+""",
+    4: """
+CREATE TABLE artifacts (
+  id TEXT PRIMARY KEY, project_id TEXT NOT NULL, task_id TEXT, attempt_id TEXT, kind TEXT NOT NULL, name TEXT NOT NULL,
+  path TEXT NOT NULL, sha256 TEXT NOT NULL, size INTEGER NOT NULL, producer TEXT NOT NULL DEFAULT '', created_at REAL NOT NULL);
+CREATE TABLE evidence_sets (
+  attempt_id TEXT PRIMARY KEY, items TEXT NOT NULL, revision TEXT NOT NULL DEFAULT '', findings TEXT NOT NULL DEFAULT '[]',
+  sha256 TEXT NOT NULL, created_at REAL NOT NULL);
+CREATE TABLE hidden_checks (
+  task_id TEXT PRIMARY KEY, checks TEXT NOT NULL, created_by TEXT NOT NULL, created_at REAL NOT NULL);
+CREATE TABLE verifications (
+  id TEXT PRIMARY KEY, attempt_id TEXT NOT NULL, verifier TEXT NOT NULL, passed INTEGER NOT NULL, results TEXT NOT NULL,
+  created_at REAL NOT NULL);
+CREATE TABLE waivers (
+  id TEXT PRIMARY KEY, task_id TEXT NOT NULL, gate TEXT NOT NULL, reason TEXT NOT NULL, approver TEXT NOT NULL,
+  expires_at REAL, created_at REAL NOT NULL);
+CREATE TABLE reputation (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, project_id TEXT, subject_kind TEXT NOT NULL, subject TEXT NOT NULL, event TEXT NOT NULL,
+  weight REAL NOT NULL, task_id TEXT, created_at REAL NOT NULL);
+CREATE TABLE eval_results (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL, case_id TEXT NOT NULL, route TEXT NOT NULL, passed INTEGER NOT NULL,
+  seconds REAL NOT NULL, cost REAL NOT NULL DEFAULT 0, detail TEXT NOT NULL DEFAULT '', created_at REAL NOT NULL);
 """,
 }
 

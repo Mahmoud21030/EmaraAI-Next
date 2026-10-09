@@ -43,6 +43,12 @@ part of ADR-0005.
 | `mcp_server.py` | MCP connectors at `/mcp/master/mcp` and `/mcp/agent/mcp` (session_start, team_hub, work); localhost and this PC's Tailscale name only |
 | `toolbook.py` | What a chat sees: `team_hub` and `work`, each with an `action` and `help`; master-only actions; every call acks earlier mail; the attempt's fence stays server-side |
 
+### Phase 5 — quality and evaluation
+
+| Module | What it does |
+|---|---|
+| `quality.py` | Gates: evidence per acceptance criterion, artifact hashes re-checked, diff scan for secrets/debug leftovers, waivers (gate, reason, approver; never the author). Hidden checks the author never sees, run by an independent verifier on its own branch from what the author pushed; acceptance blocked until they pass. Reputation events per member and per route with decay; scores can drive router preference. `Lab` runs the same cases on several routes and ranks pass rate / cost / time |
+
 Run on GitHub: `.github/workflows/emaraai-runner.yml` (Actions → emaraai-runner → Run workflow). First run with
 `init = examples/smoke-project.json` creates the project and prints its id; later runs take `project = P-...`.
 
