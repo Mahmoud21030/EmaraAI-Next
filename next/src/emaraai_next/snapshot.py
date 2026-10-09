@@ -39,7 +39,7 @@ def sha256_bytes(b: bytes) -> str:
 class Snapshots:
     def __init__(self, kernel: Kernel, directory: str | Path):
         self.k = kernel
-        self.dir = Path(directory)
+        self.dir = Path(directory).resolve()
 
     def export(self, project_id: str) -> dict:
         with self.k.db.tx():     # one consistent read
@@ -54,7 +54,7 @@ class Snapshots:
             digest = sha256_bytes(raw)
             folder = self.dir / project_id
             folder.mkdir(parents=True, exist_ok=True)
-            path = folder / f"{self.k.clock.now():017.3f}-{sid}.json"
+            path = folder / f"{last:012d}-{self.k.clock.now():017.3f}-{sid}.json"   # newest = highest event seq, even within one second
             tmp = path.with_suffix(".tmp")
             tmp.write_bytes(raw)
             tmp.replace(path)                                   # atomic: never a half-written snapshot under the real name

@@ -5,6 +5,7 @@ No production feature rush.
 Outputs: benchmarks, selected contracts, risks.
 
 ## Phase 1 — Durable Kernel
+**Status: implemented in `next/` (kernel, outbox, leases, snapshots, resume, /v1 API).**
 Build:
 - domain entities/state machines.
 - transactional DB.
@@ -17,6 +18,7 @@ Build:
 Tests: crash/idempotency.
 
 ## Phase 2 — Workspace/Coding Runtime
+**Status: implemented in `next/` (worktrees, process runner, janitor, GitHub/Drive backup, runner worker). Not yet: containers/WSL sandboxes, Drive API adapter.**
 - Git repos/worktrees.
 - resource registry.
 - shell/process runner.

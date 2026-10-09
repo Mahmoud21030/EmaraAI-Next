@@ -10,7 +10,7 @@ import threading
 from contextlib import contextmanager
 from pathlib import Path
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 MIGRATIONS = {
     1: """
@@ -62,6 +62,17 @@ CREATE INDEX recipient_state ON message_recipients(recipient, state);
 CREATE TABLE snapshots (
   id TEXT PRIMARY KEY, project_id TEXT NOT NULL, path TEXT NOT NULL, sha256 TEXT NOT NULL, last_event_seq INTEGER NOT NULL,
   created_at REAL NOT NULL, backed_up INTEGER NOT NULL DEFAULT 0);
+""",
+    2: """
+ALTER TABLE workspaces ADD COLUMN path TEXT NOT NULL DEFAULT '';
+ALTER TABLE workspaces ADD COLUMN attempt_id TEXT;
+ALTER TABLE workspaces ADD COLUMN policy TEXT NOT NULL DEFAULT 'RETAIN_UNTIL_REVIEW';
+CREATE TABLE resources (
+  id TEXT PRIMARY KEY, workspace_id TEXT REFERENCES workspaces(id), kind TEXT NOT NULL, ref TEXT NOT NULL,
+  owner TEXT NOT NULL DEFAULT '', state TEXT NOT NULL DEFAULT 'ACTIVE', created_at REAL NOT NULL, released_at REAL);
+CREATE TABLE cleanup_runs (
+  id TEXT PRIMARY KEY, started_at REAL NOT NULL, finished_at REAL, cleaned INTEGER NOT NULL DEFAULT 0,
+  quarantined INTEGER NOT NULL DEFAULT 0, report TEXT NOT NULL DEFAULT '{}');
 """,
 }
 

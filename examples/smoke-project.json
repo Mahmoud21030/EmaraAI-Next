@@ -1,0 +1,12 @@
+{
+  "name": "smoke",
+  "goal": "Prove a GitHub runner can run, back up and resume a task.",
+  "tasks": [
+    {"title": "hello", "assignee": "runner", "instructions": {
+      "base": "",
+      "steps": [
+        {"name": "python", "run": "python -c \"import platform; open('runner.txt','w').write(platform.platform())\""},
+        {"name": "shell", "run": "git log --oneline -1"}
+      ]}}
+  ]
+}
