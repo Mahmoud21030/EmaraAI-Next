@@ -31,15 +31,24 @@ jobs:
       - name: install.ps1
         shell: pwsh
         run: powershell -ExecutionPolicy Bypass -File next\scripts\install.ps1
-      - name: serve answers /v1/health
+      - name: setup with default answers
+        shell: pwsh
+        run: |
+          & "$env:USERPROFILE\.emaraai-next\venv\Scripts\emaraai-next.exe" setup --yes
+          if (-not (Test-Path "$env:USERPROFILE\.emaraai-next\emaraai.toml")) { throw "no config written" }
+          $v = Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "EmaraAI Next" -ErrorAction SilentlyContinue
+          if (-not $v) { throw "autostart was not registered" }
+      - name: serve answers /v1/health and the page
         shell: pwsh
         run: |
           $exe = "$env:USERPROFILE\.emaraai-next\venv\Scripts\emaraai-next.exe"
           $p = Start-Process $exe -ArgumentList "serve" -PassThru -WorkingDirectory "$env:USERPROFILE\.emaraai-next"
           $ok = $false
           foreach ($i in 1..30) { Start-Sleep 1; try { $r = Invoke-RestMethod http://127.0.0.1:8810/v1/health; if ($r.ok) { $ok = $true; break } } catch {} }
+          $html = (Invoke-WebRequest http://127.0.0.1:8810/ -UseBasicParsing).Content
           Stop-Process -Id $p.Id -Force
           if (-not $ok) { throw "the node did not answer" }
+          if ($html -notmatch "EmaraAI Next") { throw "the page did not load" }
   docker:
     runs-on: ubuntu-latest
     steps:

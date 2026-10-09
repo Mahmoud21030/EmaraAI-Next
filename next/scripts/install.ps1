@@ -10,7 +10,4 @@ if (-not (Test-Path $venv)) { & $py -3 -m venv $venv }
 & "$venv\Scripts\python.exe" -m pip install --upgrade pip | Out-Null
 & "$venv\Scripts\python.exe" -m pip install "$root"
 git config --global core.longpaths true
-$cfg = Join-Path $env:USERPROFILE ".emaraai-next\emaraai.toml"
-if (-not (Test-Path $cfg)) { Copy-Item (Join-Path $root "emaraai.example.toml") $cfg; Write-Host "Edit your settings: $cfg" }
-Write-Host "Installed. Start it with:  $venv\Scripts\emaraai-next.exe serve"
-Write-Host "Start with Windows (optional): next\scripts\autostart.ps1"
+Write-Host "Installed. Next: $venv\Scripts\emaraai-next.exe setup   (or just double-click Setup.cmd)"

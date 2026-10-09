@@ -9,8 +9,7 @@ VENV="$HOME/.emaraai-next/venv"
 [ -d "$VENV" ] || python3 -m venv "$VENV"
 "$VENV/bin/pip" install --upgrade pip >/dev/null
 "$VENV/bin/pip" install "$ROOT"
-CFG="$HOME/.emaraai-next/emaraai.toml"
-[ -f "$CFG" ] || { cp "$ROOT/emaraai.example.toml" "$CFG"; echo "Edit your settings: $CFG"; }
+"$VENV/bin/emaraai-next" setup ${EMARAAI_SETUP_YES:+--yes}
 if command -v systemctl >/dev/null && [ "${EMARAAI_SYSTEMD:-1}" = 1 ]; then
   mkdir -p "$HOME/.config/systemd/user"
   cat > "$HOME/.config/systemd/user/emaraai-next.service" <<UNIT

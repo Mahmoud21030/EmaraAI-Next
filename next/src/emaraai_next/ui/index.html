@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EmaraAI Next</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1b1f24; --mute:#5b6470; --line:#e3e6ea; --ok:#1f8a4c; --warn:#b26b00; --bad:#c62828; --acc:#3563e9; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#111418; --card:#1a1f25; --ink:#e8ebef; --mute:#9aa4b0; --line:#2a3139; } }
+  * { box-sizing:border-box } body { margin:0; font:15px/1.5 system-ui, "Segoe UI", Tahoma, sans-serif; background:var(--bg); color:var(--ink) }
+  header { padding:16px; display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap }
+  h1 { font-size:20px; margin:0 } .dot { display:inline-block; width:10px; height:10px; border-radius:50%; background:var(--ok); margin-inline-end:6px }
+  main { padding:0 16px 24px; display:grid; gap:12px; max-width:960px; margin:auto }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px }
+  .row { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap } .mute { color:var(--mute); font-size:13px }
+  table { width:100%; border-collapse:collapse; margin-top:8px } td { padding:6px 4px; border-top:1px solid var(--line); vertical-align:top }
+  .st { font-size:12px; padding:2px 8px; border-radius:99px; border:1px solid var(--line); white-space:nowrap }
+  .RUNNING { color:var(--acc) } .REVIEW { color:var(--warn) } .DONE { color:var(--ok) } .FAILED,.BLOCKED { color:var(--bad) }
+  .empty { text-align:center; padding:32px; color:var(--mute) }
+</style>
+</head>
+<body>
+<header><h1><span class="dot" id="dot"></span>EmaraAI Next</h1><span class="mute" id="node"></span></header>
+<main id="main"><div class="card empty">جاري التحميل…</div></main>
+<script>
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+async function load() {
+  try {
+    const r = await (await fetch("v1/overview")).json();
+    const o = r.result;
+    document.getElementById("dot").style.background = "var(--ok)";
+    document.getElementById("node").textContent = `${o.node} · ${new Date().toLocaleTimeString()}`;
+    const m = document.getElementById("main");
+    if (!o.projects.length) { m.innerHTML = `<div class="card empty">مفيش مشاريع لسه.<br><span class="mute">emaraai-next init examples/smoke-project.json</span></div>`; return; }
+    m.innerHTML = o.projects.map(p => `
+      <div class="card"><div class="row"><b>${esc(p.name)}</b><span class="mute">${esc(p.id)} · ${esc(p.status)} · ${p.done}/${p.total} خلص</span></div>
+      ${p.tasks.length ? `<table>${p.tasks.map(t => `<tr><td>${esc(t.title)}<div class="mute">${esc(t.id)} · ${esc(t.assignee || "-")}${t.last_step ? " · " + esc(t.last_step) : ""}</div></td>
+        <td style="text-align:left"><span class="st ${esc(t.status)}">${esc(t.status)}</span></td></tr>`).join("")}</table>` : `<div class="mute">مفيش tasks مفتوحة</div>`}
+      </div>`).join("");
+  } catch (e) { document.getElementById("dot").style.background = "var(--bad)"; }
+}
+load(); setInterval(load, 5000);
+</script>
+</body>
+</html>

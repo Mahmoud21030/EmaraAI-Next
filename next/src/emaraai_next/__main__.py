@@ -1,5 +1,6 @@
 """emaraai-next <command>
 
+  setup     answer a few questions (Enter = default) - configures everything, Tailscale included
   serve     run the node on this machine: API + worker + outbox + janitor (default)
   init      create a project from a JSON file:   emaraai-next init examples/smoke-project.json
   restore   bring a project from its backup:      emaraai-next restore P-XXXX [--kind code|files]
@@ -23,12 +24,17 @@ def main(argv: list[str] | None = None) -> int:
         from .worker import main as worker_main
         return worker_main(argv[1:])
     ap = argparse.ArgumentParser("emaraai-next", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", nargs="?", default="serve", choices=["serve", "init", "restore", "status"])
+    ap.add_argument("command", nargs="?", default="serve", choices=["serve", "setup", "init", "restore", "status"])
     ap.add_argument("arg", nargs="?", default="")
     ap.add_argument("--config", default=None, help="path to emaraai.toml")
     ap.add_argument("--kind", choices=["code", "files"], default="code")
     ap.add_argument("--no-api", action="store_true", help="serve: run only the worker loop")
+    ap.add_argument("--yes", action="store_true", help="setup: take every default answer")
     a = ap.parse_args(argv)
+    if a.command == "setup":
+        from . import setup
+        setup.run(yes=a.yes, path=Path(a.config) if a.config else setup.CFG_FILE)
+        return 0
 
     from .config import load
     from .daemon import Daemon
@@ -62,7 +68,7 @@ def main(argv: list[str] | None = None) -> int:
             import uvicorn
 
             from .api import build_app
-            server = uvicorn.Server(uvicorn.Config(build_app(d.k, d.worker.resumer), host=cfg.node.host, port=cfg.node.port, log_level="info"))
+            server = uvicorn.Server(uvicorn.Config(build_app(d.k, d.worker.resumer, node=cfg.node.name), host=cfg.node.host, port=cfg.node.port, log_level="info"))
             tasks.append(asyncio.create_task(server.serve()))
         await asyncio.gather(*tasks)
     asyncio.run(serve())

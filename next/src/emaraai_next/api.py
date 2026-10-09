@@ -6,7 +6,9 @@ from __future__ import annotations
 
 from starlette.applications import Starlette
 from starlette.requests import Request
-from starlette.responses import JSONResponse
+from pathlib import Path
+
+from starlette.responses import HTMLResponse, JSONResponse
 from starlette.routing import Route
 
 from .errors import KernelError
@@ -17,8 +19,22 @@ STATUS = {"INVALID_INPUT": 400, "NOT_FOUND": 404, "CONFLICT": 409, "FORBIDDEN": 
           "UNCERTAIN_OUTCOME": 409, "INTERNAL": 500}
 
 
-def build_app(kernel: Kernel, resumer: Resumer | None = None) -> Starlette:
+def overview(kernel: Kernel, node: str) -> dict:
+    out = []
+    for p in kernel.db.all("SELECT * FROM projects WHERE status != 'ARCHIVED' ORDER BY created_at DESC"):
+        all_ = kernel.tasks(p["id"])
+        open_ = [t for t in all_ if t["status"] not in ("DONE", "CANCELLED")]
+        for t in open_:
+            a = kernel.db.one("SELECT last_step FROM attempts WHERE task_id = ? ORDER BY number DESC LIMIT 1", t["id"])
+            t["last_step"] = a["last_step"] if a else ""
+        out.append({"id": p["id"], "name": p["name"], "status": p["status"], "done": sum(t["status"] == "DONE" for t in all_),
+                    "total": len(all_), "tasks": [{k: t[k] for k in ("id", "title", "status", "assignee", "last_step")} for t in open_]})
+    return {"node": node, "projects": out}
+
+
+def build_app(kernel: Kernel, resumer: Resumer | None = None, *, node: str = "") -> Starlette:
     resumer = resumer or Resumer(kernel)
+    page = (Path(__file__).parent / "ui" / "index.html").read_text(encoding="utf-8")
 
     def endpoint(fn):
         async def handler(request: Request):
@@ -38,7 +54,9 @@ def build_app(kernel: Kernel, resumer: Resumer | None = None) -> Starlette:
 
     p = lambda r: r.path_params  # noqa: E731
     routes = [
+        Route("/", lambda r: HTMLResponse(page)),
         Route("/v1/health", endpoint(lambda r, b, k: {"status": "ok"})),
+        Route("/v1/overview", endpoint(lambda r, b, k: overview(kernel, node))),
         Route("/v1/projects", endpoint(lambda r, b, k: kernel.create_project(b["name"], goal=b.get("goal", ""), kind=b.get("kind", "code"),
                                                                              backup_target=b.get("backup_target", ""), key=k)), methods=["POST"]),
         Route("/v1/projects/{pid}", endpoint(lambda r, b, k: kernel.project(p(r)["pid"]))),
