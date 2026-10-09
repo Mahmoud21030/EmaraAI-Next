@@ -6,6 +6,7 @@ Requires-Python: >=3.11
 Requires-Dist: starlette>=0.37
 Requires-Dist: uvicorn>=0.30
 Requires-Dist: anthropic>=1.12
+Requires-Dist: mcp<3,>=2.3
 Provides-Extra: dev
 Requires-Dist: pytest>=8; extra == "dev"
 Requires-Dist: pytest-asyncio>=0.23; extra == "dev"
