@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "EmaraAI Next Connector",
+  "version": "1.10.0",
+  "description": "Lets your local EmaraAI Hub open ChatGPT, Claude and Gemini chats, send its prompts, register its plugins and run its browser tools in this Chrome profile.",
+  "permissions": [
+    "tabs",
+    "scripting",
+    "alarms",
+    "storage",
+    "tabGroups"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "sw.js"
+  },
+  "action": {
+    "default_title": "EmaraAI Next Connector",
+    "default_popup": "popup.html"
+  }
+}

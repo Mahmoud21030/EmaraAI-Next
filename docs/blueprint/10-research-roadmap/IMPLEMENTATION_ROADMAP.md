@@ -58,6 +58,7 @@ projects, identities, hierarchy, inbox, plans, reviews, owner decisions.
 - learning outcome metrics.
 
 ## Phase 7 — Browser/Desktop/Advanced Tools
+**Status: implemented in `next/browser.py`, `next/desktop.py`, `next/extension/` (tested with a protocol-level fake extension and on Windows CI). Live sites need the owner's Chrome.**
 Preserve Compact automation in adapter architecture.
 
 ## Phase 8 — Mission Control UI

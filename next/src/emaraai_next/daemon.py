@@ -37,10 +37,46 @@ class Daemon:
         from .memory import Memory, Skills
         self.memory, self.skills = Memory(self.k), Skills(self.k)
         self.book = Toolbook(self.k, self.team, memory=self.memory, skills=self.skills)
-        self.chats = Chats(self.k, self.team)          # notify is wired by the browser bridge (phase 7)
+        from .browser import Bridge, ExtensionTransport, TabPool
+        self.bridge, self.tabs = Bridge(), TabPool()
+        self.transport = ExtensionTransport(self.bridge, self.tabs)
+        self.chats = Chats(self.k, self.team, notify=self._notify)
+        self._web_runs: dict[str, asyncio.Task] = {}
         self._last_janitor = self._last_snapshot = 0.0
         self._busy: set[str] = set()
         self.stopping = False
+
+    # ------------------------------------------------------------------ web chats
+    def start_web_chat(self, project: str, member: str, site: str = "claude_web") -> str:
+        """Open a chat for a member in the owner's Chrome (site: claude_web | gemini_web). Returns the chat id."""
+        c = self.chats.start(project, member, provider=f"web:{site}")
+        self._notify(c, "Start: call session_start is done for you. Read your inbox with team_hub(action='read_inbox').")
+        return c.id
+
+    def _notify(self, chat, text: str) -> None:
+        if not chat.provider.startswith("web:") or (chat.id in self._web_runs and not self._web_runs[chat.id].done()):
+            return
+        self._web_runs[chat.id] = asyncio.get_event_loop().create_task(self._run_web(chat, text))
+
+    async def _run_web(self, chat, text: str):
+        from .agent import AgentRuntime
+        from .providers.base import Capabilities
+        from .providers.web_text import WebChatProvider
+        from .router import Route, Router
+        from .toolbook import Session
+        site = chat.provider.split(":", 1)[1]
+        r = Router(self.k.clock, self.k)
+        r.add(Route(f"web:{site}", WebChatProvider(site, self.transport), f"{site}:{chat.id}"))
+        me = self.team.member(chat.project_id, chat.member)
+        system = f"You are {chat.member} ({me['title']}). {me['instructions']}".strip()
+        chat.generating = True
+        try:
+            return await AgentRuntime(r, kernel=self.k).run(system=system, context=lambda: text,
+                                                            tools=self.book.tools(Session(chat.project_id, chat.member, chat.id)),
+                                                            need=Capabilities(tool_calls=True))
+        finally:
+            chat.generating = False
+            chat.last_activity = self.k.clock.now()
 
     # ------------------------------------------------------------------ lifecycle
     def projects(self) -> list[dict]:

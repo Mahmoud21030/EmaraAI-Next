@@ -57,6 +57,16 @@ part of ADR-0005.
 
 Chats get a `memory` tool (save, search, get, checkpoint, skill) and `session_start` returns the boot packet.
 
+### Phase 7 — browser and desktop
+
+| Module | What it does |
+|---|---|
+| `browser.py` | Bridge to the owner's Chrome extension (Compact's protocol and `/api/v1/ext/*` paths; extension origin only, token, nonce replay guard); a tab pool with one owner per tab and expiring ownership; `ExtensionTransport` that opens/sends/observes claude.ai and gemini chats and waits for a finished reply (an unclosed EMARA_CALL block means still writing) |
+| `desktop.py` | Windows: list windows, start an app, screenshot as evidence; a clear error elsewhere |
+| `extension/` | The Chrome extension, pointed at this node (127.0.0.1:8810) |
+
+The node runs a member in a web chat (`Daemon.start_web_chat`), and the supervisor's wake/continue prompts go into that chat.
+
 Run on GitHub: `.github/workflows/emaraai-runner.yml` (Actions → emaraai-runner → Run workflow). First run with
 `init = examples/smoke-project.json` creates the project and prints its id; later runs take `project = P-...`.
 

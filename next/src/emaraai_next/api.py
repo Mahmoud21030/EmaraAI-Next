@@ -32,7 +32,7 @@ def overview(kernel: Kernel, node: str) -> dict:
     return {"node": node, "projects": out}
 
 
-def build_app(kernel: Kernel, resumer: Resumer | None = None, *, node: str = "") -> Starlette:
+def build_app(kernel: Kernel, resumer: Resumer | None = None, *, node: str = "", bridge=None) -> Starlette:
     resumer = resumer or Resumer(kernel)
     page = (Path(__file__).parent / "ui" / "index.html").read_text(encoding="utf-8")
 
@@ -85,6 +85,27 @@ def build_app(kernel: Kernel, resumer: Resumer | None = None, *, node: str = "")
         Route("/v1/projects/{pid}/pause", endpoint(lambda r, b, k: kernel.pause(p(r)["pid"], b["recipient"], b["session"],
                                                                                 hold_seconds=float(b.get("hold_seconds", 60)))), methods=["POST"]),
     ]
+    if bridge is not None:
+        def origin(r):
+            return r.headers.get("origin", "")
+
+        async def ext_poll(r, b, k):
+            bridge.check(b.get("token") or r.headers.get("x-ext-token", ""), origin(r), b.get("nonce"), b.get("timestamp"))
+            return {"commands": await bridge.poll(telemetry=b.get("telemetry") or None)}
+
+        def ext_result(r, b, k):
+            bridge.check(b.get("token") or r.headers.get("x-ext-token", ""), origin(r), b.get("nonce"), b.get("timestamp"))
+            bridge.resolve(b)
+            return {}
+        # same paths as Compact: its extension connects unchanged (point it at this node's port)
+        routes += [
+            Route("/api/v1/ext/hello", endpoint(lambda r, b, k: bridge.hello(str(b.get("instance", "")), str(b.get("version", "")), origin(r))),
+                  methods=["POST"]),
+            Route("/api/v1/ext/poll", endpoint(ext_poll), methods=["POST"]),
+            Route("/api/v1/ext/result", endpoint(ext_result), methods=["POST"]),
+            Route("/v1/browser", endpoint(lambda r, b, k: {"connected": bridge.connected, "version": bridge.version,
+                                                           "telemetry": bridge.telemetry})),
+        ]
     return Starlette(routes=routes)
 
 
