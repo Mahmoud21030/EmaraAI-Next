@@ -48,3 +48,16 @@ async def test_no_running_task_no_pc(book):
     b, s, tid = book
     with pytest.raises(Conflict):
         await b.tools(s)["pc"].fn({"action": "list"})
+
+
+async def test_master_inspects_submitted_work_read_only(book):
+    b, s, tid = book
+    t = b.tools(s)
+    await t["work"].fn({"action": "start_task", "task_id": tid})
+    await t["pc"].fn({"action": "write", "path": "a.py", "content": "x = 1"})
+    await t["work"].fn({"action": "report_task", "summary": "ok", "evidence": ["x"]})
+    m = b.tools(Session(s.project_id, "master", "S-m"))
+    assert (await m["work"].fn({"action": "inspect", "task_id": tid}))["files"] == ["a.py"]
+    assert (await m["work"].fn({"action": "inspect", "task_id": tid, "path": "a.py"}))["content"] == "x = 1"
+    with pytest.raises(Forbidden):
+        await m["work"].fn({"action": "inspect", "task_id": tid, "path": "../../x"})

@@ -31,6 +31,7 @@ WORK_ACTIONS = {
     "checkpoint": "step, note? - record progress on your running task (do this after every meaningful step).",
     "report_task": "summary, evidence=[...] - submit the running task for review. Evidence = test output, commits, files.",
     "get_plan": "The project plan and its progress.",
+    "inspect": "task_id, path? - read-only look at the work submitted for a task: no path = its files, path = one file.",
     "assign_task": "to, title, instructions, acceptance=[...]?, depends_on=[...]? - master: create work for a member.",
     "review_task": "task_id, accept=true|false, note - master/reviewer: accept or send back.",
     "save_plan": "overview?, architecture?, steps=[{id, title, task_ids}] , version? - master: write the plan.",
@@ -144,6 +145,25 @@ class Toolbook:
                 return {**out, "next": "Your report went to review. Pick the next task or pause."}
             if a == "get_plan":
                 return self.team.plan(s.project_id)
+            if a == "inspect":
+                t = self.k.task(args["task_id"])
+                if t["project_id"] != s.project_id:
+                    raise Forbidden("That task belongs to another project.")
+                row = self.k.db.one("SELECT w.* FROM attempts a JOIN workspaces w ON w.id = a.workspace_id WHERE a.task_id = ? "
+                                    "ORDER BY a.number DESC LIMIT 1", t["id"])
+                if not row or not self.ws:
+                    raise Conflict(f"{t['id']} has no workspace to look at.", fix="Read the report in your inbox instead.")
+                from pathlib import Path as _P
+                root = _P(row["path"]).resolve()
+                if not root.exists():
+                    raise Conflict("That workspace was already cleaned up.", fix="The work is in its backup (git branch or Drive).")
+                if args.get("path"):
+                    f = (root / args["path"]).resolve()
+                    if root not in f.parents:
+                        raise Forbidden("Paths stay inside that workspace.")
+                    return {"task_id": t["id"], "path": args["path"], "content": f.read_text(encoding="utf-8", errors="replace")[:100_000]}
+                return {"task_id": t["id"], "files": sorted(str(x.relative_to(root)).replace("\\", "/") for x in root.rglob("*")
+                                                            if x.is_file() and ".git" not in x.parts and x.name != ".emaraai-workspace")[:500]}
             if a == "assign_task":
                 return self.team.assign(s.project_id, by=s.member, to=args["to"], title=args["title"], instructions=args.get("instructions", ""),
                                         acceptance=args.get("acceptance"), depends_on=args.get("depends_on"))

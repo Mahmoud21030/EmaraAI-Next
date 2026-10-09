@@ -65,6 +65,17 @@ class Daemon:
         r.add(Route("api:" + self.cfg.ai.model, OpenAICompatProvider("api", self.cfg.ai.base_url, key), self.cfg.ai.model))
         return r
 
+    @staticmethod
+    def system_prompt(me: dict) -> str:
+        base = f"You are {me['name']} ({me['title'] or me['kind']}) in a software team run by EmaraAI Next. {me['instructions']}".strip()
+        if me["kind"] == "master":
+            return base + (" You lead: split work into tasks with work(action='assign_task'), never do a member's task yourself. "
+                           "To check submitted work use work(action='inspect', task_id=...) (read-only), then work(action='review_task'). "
+                           "When the owner's request you were given is done, start and report your own task with a short summary. "
+                           "When you wait for others call team_hub(action='pause').")
+        return base + (" Work only through the tools: work(action='start_task'), pc to write and run code in your workspace, "
+                       "work(action='report_task') with real command output as evidence. When you wait call team_hub(action='pause').")
+
     async def run_api_member(self, project: str, member: str, text: str = "Read your inbox and work on your tasks."):
         from .agent import AgentRuntime
         from .providers.base import Capabilities
@@ -74,7 +85,7 @@ class Daemon:
             raise RuntimeError("No AI API is set up: run `emaraai-next setup` (question 4) and set EMARAAI_AI_KEY.")
         c = self.chats.start(project, member, provider="api")
         me = self.team.member(c.project_id, member)
-        return await AgentRuntime(r, kernel=self.k).run(system=f"You are {member} ({me['title']}). {me['instructions']}".strip(),
+        return await AgentRuntime(r, kernel=self.k).run(system=self.system_prompt(me),
                                                         context=lambda: text, tools=self.book.tools(Session(c.project_id, member, c.id)),
                                                         need=Capabilities(tool_calls=True))
 

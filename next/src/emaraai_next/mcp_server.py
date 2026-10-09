@@ -73,14 +73,14 @@ def build_mcp(book: Toolbook, chats: Chats, *, kind: str) -> MCPServer:
                    evidence: list[str] | None = None, to: str = "", title: str = "", instructions: str = "",
                    acceptance: list[str] | None = None, depends_on: list[str] | None = None, accept: bool | None = None,
                    name: str = "", overview: str = "", architecture: str = "", steps: list[dict] | None = None,
-                   version: int | None = None, topic: str = "") -> str:
+                   version: int | None = None, topic: str = "", path: str = "") -> str:
         """Tasks and plan. Actions: list_tasks, start_task, checkpoint, report_task, get_plan, help
         (master also: assign_task, review_task, save_plan, hire, list_team)."""
         try:
             c, t = tools_for(session_id)
             raw = dict(action=action, task_id=task_id, step=step, note=note, summary=summary, evidence=evidence, to=to, title=title,
                        instructions=instructions, acceptance=acceptance, depends_on=depends_on, accept=accept, name=name,
-                       overview=overview, architecture=architecture, steps=steps, version=version, topic=topic)
+                       overview=overview, architecture=architecture, steps=steps, version=version, topic=topic, path=path)
             out = await t["work"].fn({k: v for k, v in raw.items() if v not in ("", None)})
             chats.touched(session_id)
             return _wrap(out)
