@@ -92,6 +92,7 @@ EmaraAI Next يجب أن يكون:
 
 ### 11-adrs
 Architecture Decision Records for irreversible/high-impact choices.
+- ADR-0005 — Ephemeral runners, continuous backup (GitHub/Drive) and auto-resume.
 
 ### 12-appendices
 - COMPACT_FEATURE_INVENTORY.md

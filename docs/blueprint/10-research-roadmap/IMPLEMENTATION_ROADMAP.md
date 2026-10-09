@@ -13,6 +13,7 @@ Build:
 - leases/fencing.
 - event/audit.
 - minimal API.
+- state snapshot export/restore with checksums (ADR-0005).
 Tests: crash/idempotency.
 
 ## Phase 2 — Workspace/Coding Runtime
@@ -22,7 +23,8 @@ Tests: crash/idempotency.
 - janitor.
 - basic coding harness.
 - artifacts.
-Pass cleanup/restart tests.
+- runner dispatcher, backup service (GitHub/Drive), `resume(project)` (ADR-0005).
+Pass cleanup/restart tests and the ADR-0005 kill-runner/end-session resume tests.
 
 ## Phase 3 — First Model Routes
 - one official API route.
