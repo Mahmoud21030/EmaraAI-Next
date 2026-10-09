@@ -36,7 +36,7 @@ class Daemon:
         self.janitor = Janitor(self.k, self.worker.ws)
         from .memory import Memory, Skills
         self.memory, self.skills = Memory(self.k), Skills(self.k)
-        self.book = Toolbook(self.k, self.team, memory=self.memory, skills=self.skills)
+        self.book = Toolbook(self.k, self.team, memory=self.memory, skills=self.skills, workspaces=self.worker.ws, runner=self.worker.runner)
         from .browser import Bridge, ExtensionTransport, TabPool
         self.bridge, self.tabs = Bridge(), TabPool()
         self.transport = ExtensionTransport(self.bridge, self.tabs)

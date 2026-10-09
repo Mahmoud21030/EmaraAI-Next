@@ -12,7 +12,7 @@ from mcp.server import MCPServer
 
 from .chats import Chats
 from .errors import KernelError
-from .toolbook import MEMORY_ACTIONS, TEAM_ACTIONS, WORK_ACTIONS, MASTER_ONLY, Session, Toolbook
+from .toolbook import PC_ACTIONS, MEMORY_ACTIONS, TEAM_ACTIONS, WORK_ACTIONS, MASTER_ONLY, Session, Toolbook
 
 INSTRUCTIONS = ("EmaraAI Next: you are a member of a software team. 1) session_start first; put session_id in every call. "
                 "2) team_hub(action='read_inbox') -> work(action='start_task') -> work -> work(action='report_task'). "
@@ -105,7 +105,21 @@ def build_mcp(book: Toolbook, chats: Chats, *, kind: str) -> MCPServer:
         except KeyError as e:
             return _err(KernelError(f"missing parameter {e}", fix=f"memory(action='help', topic='{action}')"))
 
+    async def pc(session_id: str, action: str, command: str = "", path: str = "", content: str | None = None, timeout: int = 300) -> str:
+        """Your task's workspace. Actions: run, read, write, list, help."""
+        try:
+            c, t = tools_for(session_id)
+            raw = dict(action=action, command=command, path=path, content=content, timeout=timeout)
+            out = await t["pc"].fn({k: v for k, v in raw.items() if v not in ("", None)})
+            chats.touched(session_id)
+            return _wrap(out)
+        except KernelError as e:
+            return _err(e)
+        except KeyError as e:
+            return _err(KernelError(f"missing parameter {e}", fix="pc(action='help')"))
+
     srv.add_tool(session_start, name="session_start")
+    srv.add_tool(pc, name="pc", description=pc.__doc__ + " " + "; ".join(f"{k}: {v}" for k, v in PC_ACTIONS.items()))
     srv.add_tool(memory, name="memory", description=memory.__doc__ + " " + "; ".join(f"{k}: {v}" for k, v in MEMORY_ACTIONS.items()))
     srv.add_tool(team_hub, name="team_hub", description=team_hub.__doc__ + " " + "; ".join(f"{k}: {v}" for k, v in TEAM_ACTIONS.items()))
     acts = {k: v for k, v in WORK_ACTIONS.items() if kind == "master" or k not in MASTER_ONLY | {"list_team"}}

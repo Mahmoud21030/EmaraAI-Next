@@ -27,7 +27,7 @@ async def _call(srv, name, **args):
 async def test_full_flow_over_mcp(world):
     k, team, chats, book, sent, pid = world
     master, agent = build_mcp(book, chats, kind="master"), build_mcp(book, chats, kind="agent")
-    assert {t.name for t in await agent.list_tools()} == {"session_start", "team_hub", "work", "memory"}
+    assert {t.name for t in await agent.list_tools()} == {"session_start", "team_hub", "work", "memory", "pc"}
     ms = (await _call(master, "session_start", project="shop"))["result"]["session_id"]
     tid = (await _call(master, "work", session_id=ms, action="assign_task", to="dev", title="login",
                        acceptance=["tests pass"]))["result"]["id"]

@@ -44,6 +44,12 @@ MEMORY_ACTIONS = {
     "checkpoint": "summary, next_steps=[...], open_questions=[...]? - where you are; a new chat continues from it.",
     "skill": "name - read a skill assigned to you.",
 }
+PC_ACTIONS = {
+    "run": "command, timeout? - run a command in your task's workspace (PowerShell on Windows, sh elsewhere). Real exit code.",
+    "read": "path - read a file from your workspace.",
+    "write": "path, content - write a file in your workspace (folders are created).",
+    "list": "path? - files in your workspace.",
+}
 MASTER_ONLY = {"assign_task", "review_task", "save_plan", "hire"}
 
 
@@ -62,9 +68,11 @@ class Session:
 
 
 class Toolbook:
-    def __init__(self, kernel: Kernel, team: Team, *, hold_seconds: float = 60.0, memory=None, skills=None):
+    def __init__(self, kernel: Kernel, team: Team, *, hold_seconds: float = 60.0, memory=None, skills=None,
+                 workspaces=None, runner=None):
         self.k, self.team, self.hold = kernel, team, hold_seconds
         self.memory, self.skills = memory, skills
+        self.ws, self.runner = workspaces, runner
 
     def tools(self, s: Session) -> dict[str, Tool]:
         me = self.team.member(s.project_id, s.member)
@@ -116,6 +124,10 @@ class Toolbook:
                 self.team.require_active(s.project_id, s.member)
                 att = self.k.start_attempt(t["id"], worker=s.worker or s.session_id)
                 s.attempt = {"id": att["id"], "task_id": t["id"], "fence": att["fence"]}
+                if self.ws is not None:
+                    p = self.k._get("projects", s.project_id)
+                    w = self.ws.provision(s.project_id, t["id"], att["id"], repo=p["backup_target"] if p["kind"] == "code" else "")
+                    s.attempt["workspace_id"] = w["id"]
                 return {"task_id": t["id"], "title": t["title"], "instructions": t["instructions"], "acceptance": t["acceptance"],
                         "attempt": att["number"]}
             if a == "checkpoint":
@@ -123,6 +135,8 @@ class Toolbook:
                 return self.k.checkpoint(att["id"], att["fence"], step=args["step"], data={"note": args.get("note", "")}, actor=s.member)
             if a == "report_task":
                 att = self._running(s)
+                if self.ws is not None and att.get("workspace_id"):
+                    self.ws.commit(att["workspace_id"], f"{s.member}: {args['summary'][:60]}", fence=att["fence"])   # code: the work is in git
                 ev = args.get("evidence") or []
                 out = self.k.submit(att["id"], att["fence"], summary=args["summary"], evidence=ev if isinstance(ev, list) else [str(ev)],
                                     actor=s.member)
@@ -174,7 +188,48 @@ class Toolbook:
                 return {"topic": args.get("topic"), "usage": MEMORY_ACTIONS.get(args.get("topic", ""), MEMORY_ACTIONS)}
             raise InvalidInput(f"memory has no action {a!r}.", fix=f"Actions: {', '.join(MEMORY_ACTIONS)}")
 
+        async def pc(args: dict):
+            self.k.ack(s.session_id)
+            a = args.get("action")
+            if self.ws is None or self.runner is None:
+                raise InvalidInput("This node has no workspace runner.")
+            att = self._running(s)
+            if not att.get("workspace_id"):
+                raise Conflict("Your task has no workspace.", fix="Start the task again with work(action='start_task').")
+            root = self.ws.require_owned(att["workspace_id"], att["fence"])
+
+            def inside(rel: str):
+                from pathlib import Path
+                p = (root / rel).resolve()
+                if p != root.resolve() and root.resolve() not in p.parents:
+                    raise Forbidden("Paths stay inside your workspace.", fix="Use a relative path like 'src/app.py'.")
+                return p
+            if a == "run":
+                import asyncio as _a
+                r = await _a.to_thread(self.runner.run, att["workspace_id"], args["command"], fence=att["fence"],
+                                       timeout=float(args.get("timeout", 300)), owner=s.member)
+                return {"exit_code": r.exit_code, "timed_out": r.timed_out, "stdout": r.stdout[-8000:], "stderr": r.stderr[-4000:]}
+            if a == "read":
+                f = inside(args["path"])
+                return {"path": args["path"], "content": f.read_text(encoding="utf-8", errors="replace")[:100_000]}
+            if a == "write":
+                f = inside(args["path"])
+                if f.name == ".emaraai-workspace":
+                    raise Forbidden("That file belongs to the platform.")
+                f.parent.mkdir(parents=True, exist_ok=True)
+                f.write_text(args["content"], encoding="utf-8")
+                return {"path": args["path"], "bytes": len(args["content"].encode())}
+            if a == "list":
+                base = inside(args.get("path", "."))
+                return {"files": sorted(str(x.relative_to(root)).replace("\\", "/") for x in base.rglob("*")
+                                        if x.is_file() and ".git" not in x.parts and x.name != ".emaraai-workspace")[:500]}
+            if a == "help":
+                return {"usage": PC_ACTIONS}
+            raise InvalidInput(f"pc has no action {a!r}.", fix=f"Actions: {', '.join(PC_ACTIONS)}")
+
         return {
+            "pc": Tool(ToolSpec("pc", "Your task's workspace (files and commands). " + " ".join(f"{k}: {v}" for k, v in PC_ACTIONS.items()),
+                                _schema(PC_ACTIONS)), pc),
             "memory": Tool(ToolSpec("memory", "Team knowledge and handoff. " + " ".join(f"{k}: {v}" for k, v in MEMORY_ACTIONS.items()),
                                     _schema(MEMORY_ACTIONS)), memory),
             "team_hub": Tool(ToolSpec("team_hub", "Inbox, messages, questions and waiting. " +

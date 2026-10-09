@@ -27,7 +27,8 @@ class OpenAICompatProvider:
 
     def _post(self, path: str, body: dict) -> dict:
         req = urllib.request.Request(self.base + path, data=json.dumps(body).encode(), method="POST",
-                                     headers={"content-type": "application/json", "authorization": f"Bearer {self.key}"})
+                                     headers={"content-type": "application/json", "authorization": f"Bearer {self.key}",
+                                              "user-agent": "emaraai-next/0.1"})   # Cloudflare (error 1010) blocks Python-urllib
         try:
             with urllib.request.urlopen(req, timeout=self.timeout) as r:      # noqa: S310 - owner-configured gateway
                 return json.loads(r.read())
@@ -80,6 +81,6 @@ class OpenAICompatProvider:
         return [{"role": "tool", "tool_call_id": c.id, "content": out} for c, out, err in results]
 
     def list_models(self) -> list[str]:
-        req = urllib.request.Request(self.base + "/models", headers={"authorization": f"Bearer {self.key}"})
+        req = urllib.request.Request(self.base + "/models", headers={"authorization": f"Bearer {self.key}", "user-agent": "emaraai-next/0.1"})
         with urllib.request.urlopen(req, timeout=30) as r:                   # noqa: S310
             return [m["id"] for m in json.loads(r.read()).get("data", [])]
