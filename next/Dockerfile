@@ -4,7 +4,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /
 WORKDIR /app
 COPY . /app
 RUN pip install --no-cache-dir /app
-ENV EMARAAI_NODE_DATA_DIR=/data EMARAAI_NODE_HOST=0.0.0.0
+# Docker's bridge counts as this PC: publish the port on 127.0.0.1 only (docker-compose.yml does)
+ENV EMARAAI_NODE_DATA_DIR=/data EMARAAI_NODE_HOST=0.0.0.0 EMARAAI_NODE_TRUSTED_NETWORKS=172.16.0.0/12
 VOLUME /data
 EXPOSE 8810
 CMD ["emaraai-next", "serve"]

@@ -10,6 +10,7 @@ The extension (/api/v1/ext) and MCP (/mcp) have their own checks (origin + token
 from __future__ import annotations
 
 import hmac
+import ipaddress
 import json
 import os
 
@@ -18,9 +19,21 @@ OWN_CHECKS = ("/api/v1/ext/", "/mcp/")
 
 
 class Guard:
-    def __init__(self, app, *, token: str | None = None):
+    def __init__(self, app, *, token: str | None = None, trusted: str | None = None):
         self.app = app
         self.token = os.environ.get("EMARAAI_NODE_TOKEN", "") if token is None else token
+        # extra networks treated like this PC, e.g. Docker's bridge when the port is published on 127.0.0.1 only
+        raw = os.environ.get("EMARAAI_NODE_TRUSTED_NETWORKS", "") if trusted is None else trusted
+        self.trusted = [ipaddress.ip_network(n.strip(), strict=False) for n in raw.split(",") if n.strip()]
+
+    def _local(self, host: str) -> bool:
+        if host in LOOPBACK:
+            return True
+        try:
+            ip = ipaddress.ip_address(host)
+        except ValueError:
+            return False
+        return any(ip in n for n in self.trusted)
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":
@@ -30,7 +43,7 @@ class Guard:
         bearer = headers.get("authorization", "").removeprefix("Bearer ").strip()
         has_token = bool(self.token) and hmac.compare_digest(bearer.encode(), self.token.encode())
         path, method = scope.get("path", ""), scope.get("method", "GET")
-        if not (client in LOOPBACK or has_token):
+        if not (self._local(client) or has_token):
             return await _deny(send, 403, "This node only answers this PC and your Tailscale devices.",
                                "Use Tailscale, or send Authorization: Bearer <EMARAAI_NODE_TOKEN>.")
         if method in ("POST", "PUT", "PATCH", "DELETE") and not path.startswith(OWN_CHECKS) and not has_token \

@@ -95,3 +95,9 @@ async def test_webhook_down_is_retried_not_lost(kernel, project, team):
     await d.run_once()
     row = kernel.db.one("SELECT * FROM outbox WHERE topic = 'webhook.post'")
     assert row["state"] == "PENDING" and row["attempts"] == 1 and row["last_error"]
+
+
+def test_trusted_network_for_docker(kernel):
+    g = Guard(build_app(kernel), token="", trusted="172.16.0.0/12")
+    assert TestClient(g, client=("172.17.0.1", 5000)).get("/v1/health").status_code == 200
+    assert TestClient(g, client=("10.0.0.5", 5000)).get("/v1/health").status_code == 403
