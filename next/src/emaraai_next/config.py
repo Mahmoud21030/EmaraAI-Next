@@ -51,10 +51,16 @@ class WorkerCfg:
 
 
 @dataclass
+class IntegrationsCfg:
+    webhook_url: str = ""                 # n8n / Zapier / your service; the secret is EMARAAI_WEBHOOK_SECRET
+
+
+@dataclass
 class Config:
     node: Node = field(default_factory=Node)
     backup: BackupCfg = field(default_factory=BackupCfg)
     worker: WorkerCfg = field(default_factory=WorkerCfg)
+    integrations: IntegrationsCfg = field(default_factory=IntegrationsCfg)
     source: str = ""
 
     @property
@@ -85,7 +91,7 @@ def load(path: str | Path | None = None, env: dict | None = None) -> Config:
         except tomllib.TOMLDecodeError as e:
             raise SystemExit(f"{p} is not valid: {e}. Write paths with / (C:/Users/me/...) or just run `emaraai-next setup` again.") from None
         cfg.source = str(p)
-    for section in ("node", "backup", "worker"):
+    for section in ("node", "backup", "worker", "integrations"):
         obj = getattr(cfg, section)
         for f in fields(obj):
             if f.name in raw.get(section, {}):

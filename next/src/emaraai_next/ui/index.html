@@ -16,11 +16,16 @@
   .st { font-size:12px; padding:2px 8px; border-radius:99px; border:1px solid var(--line); white-space:nowrap }
   .RUNNING { color:var(--acc) } .REVIEW { color:var(--warn) } .DONE { color:var(--ok) } .FAILED,.BLOCKED { color:var(--bad) }
   .empty { text-align:center; padding:32px; color:var(--mute) }
+  .need { border-color:var(--acc) } h2 { font-size:15px; margin:0 0 8px }
+  textarea { width:100%; min-height:56px; font:inherit; padding:8px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink) }
+  button { font:inherit; padding:8px 14px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; min-height:40px }
+  button.go { background:var(--acc); color:#fff; border-color:var(--acc) } .acts { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap }
+  .ev { font-size:12px; color:var(--mute); padding:3px 0; border-top:1px solid var(--line); direction:ltr; text-align:left }
 </style>
 </head>
 <body>
 <header><h1><span class="dot" id="dot"></span>EmaraAI Next</h1><span class="mute" id="node"></span></header>
-<main id="main"><div class="card empty">جاري التحميل…</div></main>
+<main><div id="need"></div><div id="main" style="display:grid;gap:12px"><div class="card empty">جاري التحميل…</div></div><div id="events"></div></main>
 <script>
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 async function load() {
@@ -38,7 +43,29 @@ async function load() {
       </div>`).join("");
   } catch (e) { document.getElementById("dot").style.background = "var(--bad)"; }
 }
-load(); setInterval(load, 5000);
+const post = (url, body) => fetch(url, {method: "POST", headers: {"content-type": "application/json", "x-emaraai": "1"}, body: JSON.stringify(body)}).then(r => r.json());
+let typing = false;
+async function loadOwner() {
+  if (typing) return;
+  const o = (await (await fetch("v1/owner")).json()).result;
+  const n = document.getElementById("need");
+  const items = [
+    ...o.questions.map(q => `<div class="card need"><h2>سؤال من ${esc(q.from)} · ${esc(q.project)}</h2><div>${esc(q.text)}</div>
+      <textarea id="a-${esc(q.id)}" placeholder="ردك…" onfocus="typing=true" onblur="typing=false"></textarea>
+      <div class="acts"><button class="go" onclick="answer('${esc(q.id)}')">ابعت الرد</button></div></div>`),
+    ...o.review.map(t => `<div class="card need"><h2>مراجعة: ${esc(t.title)} · ${esc(t.project)}</h2>
+      <div class="mute">${esc(t.assignee)} · ${esc(t.id)}</div><div>${esc(t.summary)}</div>
+      <div class="mute">${(t.evidence || []).map(esc).join("<br>")}</div>
+      <textarea id="n-${esc(t.id)}" placeholder="ملاحظة (اختياري)" onfocus="typing=true" onblur="typing=false"></textarea>
+      <div class="acts"><button class="go" onclick="review('${esc(t.id)}', true)">قبول</button><button onclick="review('${esc(t.id)}', false)">رجّعه للتعديل</button></div></div>`)];
+  n.innerHTML = items.length ? `<div class="mute" style="margin:4px 2px">محتاجك (${items.length})</div><div style="display:grid;gap:12px;margin-bottom:12px">${items.join("")}</div>` : "";
+  document.getElementById("events").innerHTML = `<div class="card"><h2>آخر الأحداث ${o.browser ? "· Chrome متصل ✓" : "· Chrome مش متصل"}</h2>` +
+    o.events.map(e => `<div class="ev">${new Date(e.ts * 1000).toLocaleTimeString()} · ${esc(e.kind)} · ${esc(e.subject)}</div>`).join("") + "</div>";
+}
+async function answer(id) { const v = document.getElementById("a-" + id).value.trim(); if (!v) return; typing = false; await post(`v1/questions/${id}/answer`, {text: v}); refresh(); }
+async function review(id, ok) { const v = (document.getElementById("n-" + id) || {}).value || ""; typing = false; await post(`v1/tasks/${id}/review`, {accept: ok, note: v}); refresh(); }
+function refresh() { load(); loadOwner().catch(() => {}); }
+refresh(); setInterval(refresh, 5000);
 </script>
 </body>
 </html>

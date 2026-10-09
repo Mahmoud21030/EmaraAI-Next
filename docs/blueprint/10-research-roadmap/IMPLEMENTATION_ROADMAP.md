@@ -62,9 +62,11 @@ projects, identities, hierarchy, inbox, plans, reviews, owner decisions.
 Preserve Compact automation in adapter architecture.
 
 ## Phase 8 — Mission Control UI
+**Status: owner page in `next/ui` (needs-you queue, review, answers, events; RTL, phone width).**
 Build over stable APIs; desktop/mobile/RTL/accessibility.
 
 ## Phase 9 — Integrations
+**Status: signed webhooks, request guard, MCP connectors, remote workers via the runner worker. Not done: OpenAI-compatible outward API, Android app.**
 n8n, outward API, remote workers, Android/PWA decisions.
 
 ## Phase 10 — Migration/Parity

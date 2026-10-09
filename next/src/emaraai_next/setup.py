@@ -98,7 +98,8 @@ def write(cfg: Config, path: Path = CFG_FILE) -> Path:
         f"[node]\nname = {q(cfg.node.name)}\ndata_dir = {q(cfg.node.data_dir)}\nhost = {q(cfg.node.host)}\nport = {cfg.node.port}\n\n"
         f"[backup]\ngit_remote = {q(cfg.backup.git_remote)}\ndrive_folder = {q(cfg.backup.drive_folder)}\n\n"
         f"[worker]\nenabled = {str(cfg.worker.enabled).lower()}\npoll_seconds = {cfg.worker.poll_seconds}\n"
-        f"assignees = [{', '.join(q(a) for a in cfg.worker.assignees)}]\n", encoding="utf-8")
+        f"assignees = [{', '.join(q(a) for a in cfg.worker.assignees)}]\n\n"
+        f"[integrations]\nwebhook_url = {q(cfg.integrations.webhook_url)}\n", encoding="utf-8")
     return path
 
 

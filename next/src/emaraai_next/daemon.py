@@ -42,6 +42,10 @@ class Daemon:
         self.transport = ExtensionTransport(self.bridge, self.tabs)
         self.chats = Chats(self.k, self.team, notify=self._notify)
         self._web_runs: dict[str, asyncio.Task] = {}
+        import os
+        from .integrations import Webhooks
+        self.webhooks = Webhooks(self.k, cfg.integrations.webhook_url, os.environ.get("EMARAAI_WEBHOOK_SECRET", ""))
+        self.webhooks.register(self.worker.dispatcher)
         self._last_janitor = self._last_snapshot = 0.0
         self._busy: set[str] = set()
         self.stopping = False
@@ -92,6 +96,7 @@ class Daemon:
     async def tick(self) -> dict:
         """One round of background work. Safe to call at any rate."""
         did = {"outbox": 0, "questions": 0, "tasks": [], "janitor": None, "snapshots": 0}
+        did["webhooks"] = self.webhooks.forward()
         did["outbox"] = await self.worker.dispatcher.run_once(limit=100)
         did["questions"] = self.team.expire_questions()
         did["prompts"] = await self.chats.tick()

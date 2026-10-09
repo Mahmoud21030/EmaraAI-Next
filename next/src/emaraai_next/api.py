@@ -32,7 +32,23 @@ def overview(kernel: Kernel, node: str) -> dict:
     return {"node": node, "projects": out}
 
 
-def build_app(kernel: Kernel, resumer: Resumer | None = None, *, node: str = "", bridge=None) -> Starlette:
+def owner_inbox(kernel: Kernel) -> dict:
+    """What waits for the owner: questions to answer and work to review."""
+    qs = kernel.db.all("SELECT q.*, p.name AS project FROM questions q JOIN projects p ON p.id = q.project_id "
+                       "WHERE q.status = 'OPEN' AND q.target = 'owner' ORDER BY q.created_at")
+    review = []
+    for t in kernel.db.all("SELECT t.*, p.name AS project FROM tasks t JOIN projects p ON p.id = t.project_id WHERE t.status = 'REVIEW' ORDER BY t.updated_at"):
+        a = kernel.db.one("SELECT checkpoint FROM attempts WHERE task_id = ? AND status = 'SUBMITTED' ORDER BY number DESC LIMIT 1", t["id"])
+        import json as _j
+        cp = _j.loads(a["checkpoint"]) if a else {}
+        review.append({"id": t["id"], "title": t["title"], "project": t["project"], "assignee": t["assignee"],
+                       "summary": cp.get("summary", ""), "evidence": cp.get("evidence", [])})
+    events = kernel.db.all("SELECT seq, ts, kind, subject, actor FROM events ORDER BY seq DESC LIMIT 15")
+    return {"questions": [{"id": q["id"], "project": q["project"], "from": q["asker"], "text": q["text"], "deadline": q["deadline"]} for q in qs],
+            "review": review, "events": events}
+
+
+def build_app(kernel: Kernel, resumer: Resumer | None = None, *, node: str = "", bridge=None, team=None) -> Starlette:
     resumer = resumer or Resumer(kernel)
     page = (Path(__file__).parent / "ui" / "index.html").read_text(encoding="utf-8")
 
@@ -57,6 +73,7 @@ def build_app(kernel: Kernel, resumer: Resumer | None = None, *, node: str = "",
         Route("/", lambda r: HTMLResponse(page)),
         Route("/v1/health", endpoint(lambda r, b, k: {"status": "ok"})),
         Route("/v1/overview", endpoint(lambda r, b, k: overview(kernel, node))),
+        Route("/v1/owner", endpoint(lambda r, b, k: {**owner_inbox(kernel), "browser": bool(bridge and bridge.connected)})),
         Route("/v1/projects", endpoint(lambda r, b, k: kernel.create_project(b["name"], goal=b.get("goal", ""), kind=b.get("kind", "code"),
                                                                              backup_target=b.get("backup_target", ""), key=k)), methods=["POST"]),
         Route("/v1/projects/{pid}", endpoint(lambda r, b, k: kernel.project(p(r)["pid"]))),
@@ -85,6 +102,14 @@ def build_app(kernel: Kernel, resumer: Resumer | None = None, *, node: str = "",
         Route("/v1/projects/{pid}/pause", endpoint(lambda r, b, k: kernel.pause(p(r)["pid"], b["recipient"], b["session"],
                                                                                 hold_seconds=float(b.get("hold_seconds", 60)))), methods=["POST"]),
     ]
+    if team is not None:
+        def answer(r, b, k):
+            q = kernel.db.one("SELECT project_id FROM questions WHERE id = ?", r.path_params["qid"])
+            if not q:
+                from .errors import NotFound
+                raise NotFound("No such question.")
+            return team.answer(q["project_id"], r.path_params["qid"], by="owner", text=b["text"])
+        routes.append(Route("/v1/questions/{qid}/answer", endpoint(answer), methods=["POST"]))
     if bridge is not None:
         def origin(r):
             return r.headers.get("origin", "")

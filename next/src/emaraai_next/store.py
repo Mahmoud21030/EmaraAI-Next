@@ -10,7 +10,7 @@ import threading
 from contextlib import contextmanager
 from pathlib import Path
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 
 MIGRATIONS = {
     1: """
@@ -126,6 +126,9 @@ CREATE TABLE skills (
   sha256 TEXT NOT NULL, status TEXT NOT NULL, source TEXT NOT NULL DEFAULT '', created_at REAL NOT NULL, PRIMARY KEY (name, version));
 CREATE TABLE skill_pins (
   project_id TEXT NOT NULL, member TEXT NOT NULL, name TEXT NOT NULL, version TEXT NOT NULL, PRIMARY KEY (project_id, member, name));
+""",
+    6: """
+CREATE TABLE kv (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 """,
 }
 

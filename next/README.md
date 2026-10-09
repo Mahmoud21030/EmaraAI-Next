@@ -67,6 +67,14 @@ Chats get a `memory` tool (save, search, get, checkpoint, skill) and `session_st
 
 The node runs a member in a web chat (`Daemon.start_web_chat`), and the supervisor's wake/continue prompts go into that chat.
 
+### Phases 8-9 — owner page and integrations
+
+| Module | What it does |
+|---|---|
+| `ui/index.html` | Phone-friendly page: "needs you" (owner questions with a reply box, work to accept or send back), projects and tasks, latest events, Chrome connection |
+| `guard.py` | Only this PC and your Tailscale devices (loopback), or a bearer token you set; browser changes need `X-EmaraAI: 1` (blocks cross-site clicks) |
+| `integrations.py` | Signed webhooks (HMAC-SHA256, delivery id for de-duplication) for n8n and others, through the outbox with retries; each event once |
+
 Run on GitHub: `.github/workflows/emaraai-runner.yml` (Actions → emaraai-runner → Run workflow). First run with
 `init = examples/smoke-project.json` creates the project and prints its id; later runs take `project = P-...`.
 
