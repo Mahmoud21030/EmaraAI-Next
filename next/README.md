@@ -23,6 +23,17 @@ part of ADR-0005.
 | `janitor.py` | ACTIVE / RETAINED / SAFE_ORPHAN / UNKNOWN; cleans only safe orphans, quarantines the rest, writes a receipt |
 | `worker.py` | Runner entry point: fetch state, resume, recover or start a task, run its steps with a checkpoint + backup after each, submit; flushes on SIGTERM |
 
+### Phase 3 — model routes (PROVIDER_ARCHITECTURE, MODEL_ROUTER)
+
+| Module | What it does |
+|---|---|
+| `providers/base.py` | One contract for every provider; capability manifest used as hard filters; provider states |
+| `providers/anthropic_api.py` | Claude API through the official `anthropic` SDK (default `claude-opus-5-5`, server-side refusal fallback on, errors mapped to provider states). Credentials from the environment only |
+| `providers/web_text.py` | Web chats (ChatGPT / claude.ai / Gemini in the owner's Chrome) via the Compact `EMARA_CALL` text protocol; a timed-out send is *uncertain*, never resent blindly |
+| `providers/fake.py` | Scripted provider for tests |
+| `router.py` | Filters (capabilities, privacy, state, owner policy: pin / no API / no web / local only / spend cap), then ranks; returns why, fallbacks, rejected; limit blocks lift at reset |
+| `agent.py` | Agent loop: tools through a broker; on a route failure it switches route and restarts from durable context, not the old transcript; a held pause that returns mail keeps the turn going |
+
 Run on GitHub: `.github/workflows/emaraai-runner.yml` (Actions → emaraai-runner → Run workflow). First run with
 `init = examples/smoke-project.json` creates the project and prints its id; later runs take `project = P-...`.
 

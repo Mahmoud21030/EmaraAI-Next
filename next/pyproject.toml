@@ -7,7 +7,7 @@ name = "emaraai-next"
 version = "0.1.0"
 description = "EmaraAI Next durable kernel: state machines, outbox, leases/fencing, messaging, snapshots and resume."
 requires-python = ">=3.11"
-dependencies = ["starlette>=0.37", "uvicorn>=0.30"]
+dependencies = ["starlette>=0.37", "uvicorn>=0.30", "anthropic>=1.12"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "httpx>=0.27"]

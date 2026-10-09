@@ -29,6 +29,7 @@ Tests: crash/idempotency.
 Pass cleanup/restart tests and the ADR-0005 kill-runner/end-session resume tests.
 
 ## Phase 3 — First Model Routes
+**Status: implemented in `next/` (Claude API route, web-chat text route, router, agent loop with route switching). Not yet run live: needs an API key and the owner's Chrome; coding-agent route not started.**
 - one official API route.
 - one web subscription route.
 - one coding-agent route.
