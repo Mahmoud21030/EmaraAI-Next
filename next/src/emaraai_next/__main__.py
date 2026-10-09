@@ -5,6 +5,7 @@
   init      create a project from a JSON file:   emaraai-next init examples/smoke-project.json
   restore   bring a project from its backup:      emaraai-next restore P-XXXX [--kind code|files]
   status    show projects and their open tasks
+  import-compact  move an EmaraAI Hub Compact database here:  emaraai-next import-compact "C:/EmaraAI/data/hub.db"
   worker    one-shot worker run (used by GitHub Actions and other CI)
 """
 from __future__ import annotations
@@ -24,7 +25,7 @@ def main(argv: list[str] | None = None) -> int:
         from .worker import main as worker_main
         return worker_main(argv[1:])
     ap = argparse.ArgumentParser("emaraai-next", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", nargs="?", default="serve", choices=["serve", "setup", "init", "restore", "status"])
+    ap.add_argument("command", nargs="?", default="serve", choices=["serve", "setup", "init", "restore", "status", "import-compact"])
     ap.add_argument("arg", nargs="?", default="")
     ap.add_argument("--config", default=None, help="path to emaraai.toml")
     ap.add_argument("--kind", choices=["code", "files"], default="code")
@@ -45,6 +46,10 @@ def main(argv: list[str] | None = None) -> int:
         spec = json.loads(Path(a.arg).read_text(encoding="utf-8"))
         kind = spec.get("kind", a.kind)
         print(json.dumps(d.worker.init(spec, kind=kind, remote=cfg.backup.git_remote if kind == "code" else "")))
+        return 0
+    if a.command == "import-compact":
+        from .migrate_compact import import_compact
+        print(json.dumps(import_compact(d.k, a.arg), indent=1))
         return 0
     if a.command == "restore":
         print(json.dumps(d.restore(a.arg, kind=a.kind), default=str))
