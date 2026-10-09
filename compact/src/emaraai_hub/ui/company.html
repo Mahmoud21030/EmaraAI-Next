@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content"><meta name="theme-color" content="#0b1020">
+<title>EmaraAI</title><link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/ui/icon.svg"><link rel="stylesheet" href="/ui/company.css?v=__V__"></head>
+<body>
+<aside style="display:flex">
+  <a class="brand" id="brand" href="#/"><span class="logo">E</span><div><b>EmaraAI</b><small>AI operations company</small></div></a>
+  <nav id="nav"></nav>
+  <div class="foot" style="margin-top:0"><button class="quiet s" data-do="theme" title="Light / dark">Theme</button><button class="quiet s" data-do="key" title="API key (only through a tunnel)">Key</button></div>
+</aside>
+<main>
+  <header><button class="burger quiet" data-do="navToggle" aria-label="Menu"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button><div class="search" onclick="palette(true)"><span>Search or run a command</span><span class="sp"></span><kbd>Ctrl K</kbd></div><span class="sp"></span>
+    <button class="quiet bell" data-do="bell" id="bell" aria-label="Notifications" title="Notifications"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1 1 12 0c0 6 2 7 2 7H4s2-1 2-7"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><i id="belln"></i></button>
+    <button class="wide" data-do="assign">Assign task</button><button class="wide" data-do="hire">Hire</button><button class="pri" data-do="newProject"><span class="wide">New project</span><span class="narrow">+ New</span></button></header>
+  <div id="view"></div>
+</main>
+<div id="navscrim" data-do="navToggle"></div><div id="drawer"></div><div id="modal"></div><div id="pal"></div><div id="toast"></div>
+<script src="/ui/company.js?v=__V__"></script>
+</body></html>

@@ -1,0 +1,78 @@
+# EmaraAI Hub configuration. Copy to config/hub.yaml and edit.
+# Any key can be overridden by env: EMARAAI_HUB__SECTION__KEY=value  (e.g. EMARAAI_HUB__SERVER__PORT=8800)
+
+data_dir: data
+prompts_dir: prompts
+
+server:
+  host: 127.0.0.1
+  port: 8795
+  # REQUIRED if the hub is reachable from the internet without OAuth:
+  # endpoints become /c/<path_secret>/master/mcp ...   (generate: python -c "import secrets;print(secrets.token_urlsafe(32))")
+  path_secret: ""
+  allowed_hosts: []          # your tunnel hostname(s), e.g. ["myhome-emara.duckdns.org"]
+  stateless_http: true
+
+api:
+  api_key: ""                # REST key for n8n/dashboard. Empty = direct local requests only.
+                             # REQUIRED once path_secret/allowed_hosts is set (REST is closed without it).
+
+memory:
+  checkpoint_soft_calls: 12  # reminder after N tool calls without memory_checkpoint
+  checkpoint_hard_calls: 25  # tools blocked until memory_checkpoint
+  boot_max_chars: 14000
+  pc_calls_count: true       # PC tool calls made with a session_id count toward the checkpoint
+  pc_checkpoint_block: false # true = PC tools are blocked too when a checkpoint is overdue
+
+tools:
+  max_response_chars: 60000  # cap of one tool result (long strings/lists are shortened, with a notice)
+  batch_max_steps: 12        # steps allowed in one *_batch call
+  batch_budget_seconds: 100  # a batch stops starting new steps after this long
+  batch_tip_after: 4         # after N single calls in a row, remind the chat to use *_batch (0 = off)
+
+sessions:
+  budget_chars: 320000       # rotate the chat to a fresh one around this size
+  soft_ratio: 0.8
+  max_turns: 120
+  allow_parallel: false
+
+supervisor:
+  enabled: true
+  tick_seconds: 10
+  idle_seconds: 90           # idle chat with open work -> "continue" prompt
+  stall_seconds: 420         # generating this long without tool calls -> stop + continue
+  wake_cooldown_seconds: 45
+  continue_backoff_seconds: 60
+  max_continues: 6           # then escalate (master inbox + n8n event)
+  pending_join_timeout_seconds: 240
+  max_open_attempts: 3       # then the pending chat fails: master + n8n are told
+  respawn_cooldown_seconds: 900   # wait before trying to open a chat for that role again
+  handoff_grace_seconds: 120 # a full chat gets this long to write its last checkpoint
+  close_old_chat: true       # close the old tab after a rotation completed
+  auto_spawn_agents: true
+
+driver:
+  kind: manual               # manual | extension (automatic, your own Chrome) | playwright (separate Chrome window)
+  chatgpt_new_chat_url: "https://chatgpt.com/"   # tip: use your ChatGPT *Project* URL so all chats share project files
+  selectors_file: config/chatgpt_selectors.yaml
+  cdp_url: http://127.0.0.1:9222
+
+n8n:
+  enabled: false
+  signing_secret: ""         # HMAC key; n8n verifies X-EmaraAI-Signature
+  subscriptions:
+    - url: http://127.0.0.1:5678/webhook/emaraai-events
+      events: ["task.*", "session.escalated", "session.rotating", "session.join_failed", "project.done", "n8n.*"]
+  workflows:
+    notify_me:
+      url: http://127.0.0.1:5678/webhook/emaraai-notify
+      description: "Send a notification to the user (input: {text})"
+
+logging:
+  level: INFO
+  dir: data/logs
+  max_mb: 20
+  backups: 7
+  console: true
+  preview_chars: 300
+  per_channel_files: true    # also write data/logs/<channel>.jsonl (tools, supervisor, driver, legacy, n8n, api, services)

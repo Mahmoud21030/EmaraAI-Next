@@ -1,0 +1,1 @@
+[EmaraAI Hub] This chat is almost full. Now call memory_checkpoint(session_id="{session_id}", summary=..., next_steps=[...]) with everything a fresh chat needs, then end your reply. A new chat will continue the work automatically.

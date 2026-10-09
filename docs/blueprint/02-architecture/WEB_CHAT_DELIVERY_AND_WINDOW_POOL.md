@@ -290,3 +290,19 @@ This spec is based on current Compact docs/source behavior covering:
 - actual delivery uncertainty/quarantine lessons.
 
 This is a Tier-0 compatibility feature for Web Chat mode.
+
+## Held Pause (deliver in the open call instead of a new tab prompt)
+
+When a chat calls `pause_chat` (`chat_pause`), the hub does not return at once. It keeps the call open for up to
+`lifecycle.pause_hold_seconds` (default 60 s):
+
+- If waking mail (task, question, answer, report …) arrives meanwhile, the call returns it right away
+  (`paused=false`, `messages[]`). The chat continues in the same reply. No wake prompt is typed into a tab.
+- If nothing arrives, the call returns `paused=true` and the chat ends its reply as before.
+- While a pause is held, the supervisor sends no wake and no "continue" prompt to that session.
+- Messages handed over this way follow the normal at-least-once rule: they count as received only after the
+  chat's next tool call; otherwise they are requeued.
+
+Why: most replies to a question come within a minute. Holding the pause saves one tab delivery per exchange
+(tab acquisition, typing, receipt checks) and the answer reaches the chat much faster.
+Next must keep this behaviour: `pause` is a bounded long-poll, not a fire-and-forget flag.

@@ -1,0 +1,22 @@
+const fs = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
+const source = fs.readFileSync('extension/sw.js', 'utf8');
+let tab = {id:1,url:'https://chatgpt.com/c/12345678'};
+let result = {ok:false,error:'composer not found'};
+let calls = 0;
+const ctx = {pageTypeSend:()=>{},pageState:()=>{},poolTab:async()=>tab,chatIdOf:()=>tab.chat,run:async()=>{calls++;return result;},sleep:async()=>{},chrome:{tabs:{get:async()=>tab}}};
+vm.createContext(ctx);
+const begin = source.indexOf('async pool_send(a)');
+const end = source.indexOf('async pool_close(a)',begin);
+vm.runInContext('const testOps={'+source.slice(begin,end)+'}; globalThis.send=testOps.pool_send;',ctx);
+(async()=>{
+  tab.chat='wrong';
+  await assert.rejects(ctx.send({expect_chat_id:'expected'}),e=>e.beforeSend===true);
+  assert.equal(calls,0);
+  tab.chat='expected';
+  await assert.rejects(ctx.send({expect_chat_id:'expected'}),e=>e.beforeSend===true);
+  result={ok:false,error:'submission did not settle',submission_attempted:true};
+  await assert.rejects(ctx.send({expect_chat_id:'expected'}),e=>e.beforeSend===false);
+  console.log('4 delivery preflight checks passed');
+})().catch(e=>{console.error(e);process.exitCode=1;});

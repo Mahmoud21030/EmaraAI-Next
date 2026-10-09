@@ -1,0 +1,2 @@
+[console_scripts]
+emaraai-hub = emaraai_hub.__main__:main

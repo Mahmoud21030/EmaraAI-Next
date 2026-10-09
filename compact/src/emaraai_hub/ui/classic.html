@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>EmaraAI Control Center</title><link rel="stylesheet" href="/ui/classic.css?v=__V__"><link rel="stylesheet" href="/ui/extra.css?v=__V__">__SWITCH__</head><body>
+<aside><div class="brand"><div class="logo">E</div><div><b>EmaraAI</b><small>Your AI, Fully Automated</small></div></div><nav id="nav"></nav>
+<div class="foot"><div class="row" style="gap:10px;flex-wrap:nowrap"><div class="logo" style="width:34px;height:34px;font-size:16px">E</div><div><b style="color:var(--acc)">EmaraAI</b> <span id="ver"></span><div>Built for a smarter future</div></div></div></div></aside>
+<main><div class="top"><h1 id="title"></h1><div id="sys" class="banner"><span class="dot"></span><div><b>…</b><small></small></div></div><span id="act" style="display:none"></span>
+<select id="proj" style="width:auto" onchange="state.project=this.value;render()"></select>
+<div class="ico" title="Light / dark" onclick="theme()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg></div>
+<div class="ico" title="Things that need you" onclick="go('dash')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 17h12l-1.5-2V10a4.5 4.5 0 00-9 0v5zM10 20h4"/></svg><i id="bell" style="display:none"></i></div>
+<div class="user"><div class="av" id="av">–</div><div><b id="uname"></b><small>Local user</small></div></div></div>
+<div class="ph"><div><h1 id="ptitle"></h1><p id="psub"></p></div><div id="pact"></div></div>
+<div id="view"></div></main><div class="toast" id="toast"></div>
+<script src="/ui/classic.js?v=__V__"></script><script src="/ui/extra.js?v=__V__"></script></body></html>

@@ -1,0 +1,28 @@
+# ChatGPT DOM selectors used by the browser drivers. ChatGPT changes its UI often:
+# when the supervisor reports "unknown" chat states, update these lines only.
+composer: '[data-chatgpt-composer] [contenteditable="true"][role="textbox"], #prompt-textarea, form [contenteditable="true"][role="textbox"]'
+send_button: 'button[data-testid="send-button"]:not([disabled]), form[data-chatgpt-composer] button[type="submit"]:not([disabled]), button[aria-label="Send"]:not([disabled]), button[aria-label="Send prompt"]:not([disabled])'
+stop_button: 'button[data-testid="stop-button"], form[data-chatgpt-composer] button[aria-label="Stop"], button[aria-label="Stop generating"], button[aria-label="Stop streaming"], form button[aria-label="Stop"]'
+assistant_turn: '[data-message-author-role="assistant"]'
+user_turn: '[data-message-author-role="user"]'
+error_box: '[role="alert"], .text-token-text-error, [data-testid="conversation-error"]'
+limit_patterns:
+  - "maximum length"
+  - "conversation is too long"
+  - "too long for this conversation"
+  - "start a new chat"
+  - "reached the limit"
+error_patterns:
+  - "something went wrong"
+  - "network error"
+  - "there was an error generating"
+  - "an error occurred"
+  - "error in message stream"
+# Permission prompt ("Allow ChatGPT to use EmaraAI Agent?"). Used only when driver.auto_approve is on.
+# The button is pressed only when the prompt text contains one of approve_scope_text.
+approve_button_texts:
+  - "Always allow"
+approve_scope_text:
+  - "EmaraAI Lite Master"
+  - "EmaraAI Lite Agent"
+  - "EmaraAI Lite Reply"
