@@ -1,0 +1,21 @@
+# Glossary
+
+- **Agent Identity**: persistent digital employee/persona independent of model session.
+- **Agent Runtime**: disposable reasoning process running an identity for work.
+- **Attempt**: one execution try for a task.
+- **Artifact**: immutable/versioned output/evidence file.
+- **Control Plane**: durable coordination, policy and state services.
+- **Execution Plane**: workers/sandboxes executing code/tools.
+- **Fencing Token**: monotonically increasing generation preventing stale lease holder mutation.
+- **Harness**: coding tools/context/repo intelligence around a model.
+- **Lease**: time-bounded ownership of resource/work.
+- **Model Route**: provider+model+mode+effort+harness/environment selection.
+- **Outbox**: durable queue written atomically with state change.
+- **Quarantine**: state for uncertain/unsafe-to-auto-resolve items.
+- **Receipt**: evidence layer that external action reached a defined stage.
+- **TTAC**: Time to Accepted Change.
+- **Workspace**: isolated task execution/repository environment.
+- **Worktree**: Git linked working directory for isolated branch/revision.
+- **Evidence Set**: immutable collection used for acceptance.
+- **Decision Room**: structured multi-agent deliberation.
+- **Memory Provenance**: origin and validation chain of knowledge.
