@@ -8,6 +8,7 @@ Non-code projects ("files") get a plain folder with the same marker; their backu
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -25,10 +26,14 @@ POLICIES = ("EPHEMERAL", "RETAIN_ON_FAILURE", "RETAIN_UNTIL_REVIEW", "MANUAL")
 
 def git(cwd: str | Path, *args: str, check: bool = True) -> str:
     env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
-    r = subprocess.run(["git", *args], cwd=str(cwd), capture_output=True, text=True, env=env)
+    r = subprocess.run(["git", "-c", "core.longpaths=true", *args], cwd=str(cwd), capture_output=True, text=True, env=env)
     if check and r.returncode != 0:
         raise RuntimeError(f"git {' '.join(args)} failed ({r.returncode}): {r.stderr.strip() or r.stdout.strip()}")
     return r.stdout.strip()
+
+
+def short_name(s: str) -> str:
+    return hashlib.sha256(s.encode()).hexdigest()[:12]
 
 
 def _rmtree(path: Path) -> None:
@@ -97,11 +102,10 @@ class Workspaces:
 
     def _mirror(self, repo: str) -> Path:
         """One shared clone per repository; worktrees hang off it."""
-        name = "".join(c if c.isalnum() else "_" for c in repo)[-80:]
-        m = self.root / "_repos" / name
+        m = self.root / "_repos" / short_name(repo)        # short: Windows paths have a 260-character limit
         if not (m / ".git").exists() and not (m / "HEAD").exists():
             m.parent.mkdir(parents=True, exist_ok=True)
-            subprocess.run(["git", "clone", "--quiet", repo, str(m)], check=True, capture_output=True, text=True)
+            subprocess.run(["git", "-c", "core.longpaths=true", "clone", "--quiet", repo, str(m)], check=True, capture_output=True, text=True)
         return m
 
     def get(self, workspace_id: str) -> dict:

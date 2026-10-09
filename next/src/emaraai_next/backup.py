@@ -20,7 +20,7 @@ from pathlib import Path
 from .kernel import Kernel
 from .outbox import Dispatcher
 from .snapshot import Snapshots, sha256_bytes
-from .workspace import MARKER, Workspaces, git
+from .workspace import MARKER, Workspaces, git, short_name
 
 STATE_BRANCH = "emaraai-state"
 
@@ -103,7 +103,7 @@ class Backup:
 
     # ------------------------------------------------------------------ state snapshots
     def _state_tree(self, remote: str) -> Path:
-        tree = self.ws.root / "_state" / "".join(c if c.isalnum() else "_" for c in remote)[-80:]
+        tree = self.ws.root / "_state" / short_name(remote)
         if not (tree / ".git").exists():
             tree.mkdir(parents=True, exist_ok=True)
             git(tree, "init", "--quiet")
