@@ -56,7 +56,8 @@ def test_built_in_bridge_offers_only_what_it_implements(hub):
     servers = build_pc_servers(hub)
     names = {s for srv in servers.values() for s in srv.specs}
     assert {"shell_run", "file_edit", "app_launch", "browser_open", "browser_click", "window_list", "ui_click", "ui_type_text"} <= names
-    assert not ({"dev_build", "skill_load", "browser_run_js", "browser_upload_files"} & names) and "file_send_to_chat" in names
+    assert not ({"dev_build", "skill_load", "browser_run_js"} & names) and "file_send_to_chat" in names
+    assert "browser_upload_files" in names      # implemented by the native bridge (pc_native/runtime.py, test_browser_upload.py)
 
 
 def test_send_keys_translation():
